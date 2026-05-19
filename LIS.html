@@ -1,0 +1,2892 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Очередь приёмки / Рабочее место приёмщика</title>
+
+  <style> 
+    /* =========================================================
+       БАЗОВЫЕ НАСТРОЙКИ UI-KIT
+       Здесь можно менять цвета, радиусы, тени и базовую типографику
+       ========================================================= */
+    :root {
+      --color-accent: #ec6932;
+      --color-accent-dark: #d85a28;
+      --color-bg: #f2f2f2;
+      --color-black: #000000;
+      --color-white: #ffffff;
+
+      --color-text-main: #151515;
+      --color-text-muted: #6f6f6f;
+      --color-text-soft: #9a9a9a;
+
+      --color-border: #dedede;
+      --color-border-strong: #c8c8c8;
+
+      --color-success: #147a45;
+      --color-success-bg: #e9f7ef;
+
+      --color-warning: #a85b00;
+      --color-warning-bg: #fff4df;
+
+      --color-danger: #b42318;
+      --color-danger-bg: #fdebea;
+
+      --color-info: #2452a3;
+      --color-info-bg: #eaf1ff;
+
+      --shadow-sm: 0 8px 24px rgba(0, 0, 0, 0.06);
+      --shadow-md: 0 18px 48px rgba(0, 0, 0, 0.14);
+
+      --radius-sm: 10px;
+      --radius-md: 16px;
+      --radius-lg: 22px;
+
+      --container-max: 1280px;
+      --header-height: 72px;
+
+      --transition: 160ms ease;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      min-width: 360px;
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      font-family:
+        Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+        "Segoe UI", Arial, sans-serif;
+      background: var(--color-bg);
+      color: var(--color-text-main);
+      line-height: 1.45;
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    button:disabled,
+    input:disabled,
+    select:disabled,
+    textarea:disabled {
+      cursor: not-allowed;
+      opacity: 0.64;
+    }
+
+    a {
+      color: inherit;
+    }
+
+    :focus-visible {
+      outline: 3px solid rgba(236, 105, 50, 0.38);
+      outline-offset: 3px;
+    }
+
+    .page {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* =========================================================
+       ВЕРХНЯЯ ПАНЕЛЬ
+       ========================================================= */
+    .app-header {
+      min-height: var(--header-height);
+      background: var(--color-white);
+      border-bottom: 1px solid var(--color-border);
+      position: sticky;
+      top: 0;
+      z-index: 20;
+    }
+
+    .app-header__inner {
+      width: min(100%, var(--container-max));
+      margin: 0 auto;
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-width: 0;
+    }
+
+    .brand__mark {
+      width: 42px;
+      height: 42px;
+      border-radius: 14px;
+      background: var(--color-black);
+      color: var(--color-white);
+      display: grid;
+      place-items: center;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      flex: 0 0 auto;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .brand__mark::after {
+      content: "";
+      width: 18px;
+      height: 18px;
+      background: var(--color-accent);
+      border-radius: 50%;
+      position: absolute;
+      right: -4px;
+      bottom: -4px;
+    }
+
+    .brand__text {
+      min-width: 0;
+    }
+
+    .brand__eyebrow {
+      margin: 0;
+      color: var(--color-text-muted);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .brand__title {
+      margin: 2px 0 0;
+      font-size: 18px;
+      font-weight: 760;
+      letter-spacing: -0.02em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .header-meta {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .operator-card {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      border: 1px solid var(--color-border);
+      border-radius: 999px;
+      background: var(--color-white);
+    }
+
+    .operator-card__avatar {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: var(--color-accent);
+      color: var(--color-white);
+      display: grid;
+      place-items: center;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .operator-card__name {
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1.15;
+    }
+
+    .operator-card__shift {
+      font-size: 12px;
+      color: var(--color-text-muted);
+      line-height: 1.15;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      border-radius: 999px;
+      padding: 8px 11px;
+      font-size: 13px;
+      font-weight: 700;
+      background: #f7f7f7;
+      border: 1px solid var(--color-border);
+      color: var(--color-text-main);
+      white-space: nowrap;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--color-success);
+      box-shadow: 0 0 0 4px rgba(20, 122, 69, 0.1);
+    }
+
+    /* =========================================================
+       ОСНОВНОЙ LAYOUT
+       ========================================================= */
+    .main {
+      width: min(100%, var(--container-max));
+      margin: 0 auto;
+      padding: 26px 24px 42px;
+      flex: 1;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 360px;
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+
+    .card {
+      background: var(--color-white);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .card--flat {
+      box-shadow: none;
+    }
+
+    .scan-panel {
+      padding: 24px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 260px;
+      align-items: stretch;
+      gap: 18px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .scan-panel::before {
+      content: "";
+      width: 220px;
+      height: 220px;
+      border-radius: 50%;
+      background: rgba(236, 105, 50, 0.08);
+      position: absolute;
+      right: -70px;
+      top: -90px;
+      pointer-events: none;
+    }
+
+    .scan-panel__content {
+      position: relative;
+      z-index: 1;
+    }
+
+    .page-kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+      padding: 7px 10px;
+      border-radius: 999px;
+      background: #fafafa;
+      color: var(--color-text-muted);
+      border: 1px solid var(--color-border);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .page-kicker__icon {
+      width: 17px;
+      height: 17px;
+      border-radius: 5px;
+      background: var(--color-accent);
+      display: inline-block;
+      position: relative;
+    }
+
+    .page-kicker__icon::before,
+    .page-kicker__icon::after {
+      content: "";
+      position: absolute;
+      background: var(--color-white);
+      left: 4px;
+      right: 4px;
+      height: 2px;
+      border-radius: 999px;
+    }
+
+    .page-kicker__icon::before {
+      top: 5px;
+    }
+
+    .page-kicker__icon::after {
+      bottom: 5px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(26px, 4vw, 42px);
+      line-height: 1.06;
+      letter-spacing: -0.045em;
+    }
+
+    .lead {
+      max-width: 720px;
+      margin: 14px 0 0;
+      color: var(--color-text-muted);
+      font-size: 16px;
+    }
+
+    .primary-actions {
+      margin-top: 22px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .button {
+      min-height: 44px;
+      border: 0;
+      border-radius: 13px;
+      padding: 0 16px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      font-weight: 780;
+      transition:
+        transform var(--transition),
+        background var(--transition),
+        border-color var(--transition),
+        box-shadow var(--transition);
+      user-select: none;
+      text-decoration: none;
+    }
+
+    .button:hover:not(:disabled) {
+      transform: translateY(-1px);
+    }
+
+    .button:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    .button--primary {
+      background: var(--color-accent);
+      color: var(--color-white);
+      box-shadow: 0 12px 24px rgba(236, 105, 50, 0.24);
+    }
+
+    .button--primary:hover:not(:disabled) {
+      background: var(--color-accent-dark);
+    }
+
+    .button--secondary {
+      background: var(--color-black);
+      color: var(--color-white);
+    }
+
+    .button--ghost {
+      background: var(--color-white);
+      color: var(--color-text-main);
+      border: 1px solid var(--color-border);
+    }
+
+    .button--ghost:hover:not(:disabled) {
+      border-color: var(--color-border-strong);
+      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.05);
+    }
+
+    .button--danger {
+      background: var(--color-danger);
+      color: var(--color-white);
+    }
+
+    .button--success {
+      background: var(--color-success);
+      color: var(--color-white);
+    }
+
+    .button__icon {
+      width: 18px;
+      height: 18px;
+      display: inline-grid;
+      place-items: center;
+      flex: 0 0 auto;
+    }
+
+    .keyboard-hint {
+      color: var(--color-text-muted);
+      font-size: 13px;
+    }
+
+    .kbd {
+      display: inline-flex;
+      min-width: 26px;
+      height: 24px;
+      padding: 0 7px;
+      align-items: center;
+      justify-content: center;
+      border-radius: 7px;
+      background: #f7f7f7;
+      border: 1px solid var(--color-border);
+      color: var(--color-text-main);
+      font-size: 12px;
+      font-weight: 800;
+      box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.08);
+    }
+
+    .manual-entry {
+      position: relative;
+      z-index: 1;
+      background: #fafafa;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 11px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
+    .field__label {
+      font-size: 13px;
+      color: var(--color-text-muted);
+      font-weight: 750;
+    }
+
+    .field__control {
+      width: 100%;
+      min-height: 44px;
+      border: 1px solid var(--color-border);
+      border-radius: 12px;
+      padding: 0 12px;
+      background: var(--color-white);
+      color: var(--color-text-main);
+      transition:
+        border-color var(--transition),
+        box-shadow var(--transition),
+        background var(--transition);
+    }
+
+    .field__control:hover {
+      border-color: var(--color-border-strong);
+    }
+
+    .field__control:focus {
+      outline: none;
+      border-color: var(--color-accent);
+      box-shadow: 0 0 0 4px rgba(236, 105, 50, 0.12);
+    }
+
+    .field__control--error {
+      border-color: var(--color-danger);
+      box-shadow: 0 0 0 4px rgba(180, 35, 24, 0.1);
+    }
+
+    .field__hint {
+      color: var(--color-text-muted);
+      font-size: 12px;
+    }
+
+    .field__error {
+      min-height: 18px;
+      color: var(--color-danger);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .shift-summary {
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .card-title-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .card-title {
+      margin: 0;
+      font-size: 17px;
+      letter-spacing: -0.02em;
+    }
+
+    .card-subtitle {
+      margin: 4px 0 0;
+      color: var(--color-text-muted);
+      font-size: 13px;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .summary-item {
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: 14px;
+      background: #fbfbfb;
+      min-height: 92px;
+    }
+
+    .summary-item__label {
+      color: var(--color-text-muted);
+      font-size: 12px;
+      font-weight: 750;
+    }
+
+    .summary-item__value {
+      margin-top: 7px;
+      font-size: 28px;
+      line-height: 1;
+      letter-spacing: -0.04em;
+      font-weight: 840;
+    }
+
+    .summary-item__trend {
+      margin-top: 8px;
+      font-size: 12px;
+      color: var(--color-text-muted);
+    }
+
+    .summary-item--accepted {
+      background: var(--color-success-bg);
+      border-color: rgba(20, 122, 69, 0.18);
+    }
+
+    .summary-item--warning {
+      background: var(--color-warning-bg);
+      border-color: rgba(168, 91, 0, 0.18);
+    }
+
+    .summary-item--danger {
+      background: var(--color-danger-bg);
+      border-color: rgba(180, 35, 24, 0.18);
+    }
+
+    .summary-item--notfound {
+      background: #f7f7f7;
+      border-color: var(--color-border);
+    }
+
+    /* =========================================================
+       БЛОК ФИЛЬТРОВ И СПИСКА
+       ========================================================= */
+    .workspace {
+      display: grid;
+      grid-template-columns: 280px minmax(0, 1fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .filters-card {
+      padding: 18px;
+      position: sticky;
+      top: calc(var(--header-height) + 18px);
+    }
+
+    .filters-card__header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .filters-title {
+      margin: 0;
+      font-size: 16px;
+      letter-spacing: -0.02em;
+    }
+
+    .filters-group {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .filter-option {
+      display: grid;
+      grid-template-columns: 22px minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: center;
+      padding: 11px 10px;
+      border: 1px solid var(--color-border);
+      border-radius: 13px;
+      background: var(--color-white);
+      transition:
+        border-color var(--transition),
+        background var(--transition),
+        transform var(--transition);
+      cursor: pointer;
+    }
+
+    .filter-option:hover {
+      border-color: var(--color-border-strong);
+      background: #fbfbfb;
+    }
+
+    .filter-option input {
+      width: 17px;
+      height: 17px;
+      accent-color: var(--color-accent);
+    }
+
+    .filter-option__label {
+      font-size: 13px;
+      font-weight: 730;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .filter-option__count {
+      min-width: 28px;
+      height: 24px;
+      padding: 0 7px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      background: #f4f4f4;
+      color: var(--color-text-muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .filters-actions {
+      margin-top: 14px;
+      display: grid;
+      gap: 9px;
+    }
+
+    .list-card {
+      overflow: hidden;
+    }
+
+    .list-toolbar {
+      padding: 18px;
+      border-bottom: 1px solid var(--color-border);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 210px;
+      gap: 12px;
+      align-items: end;
+      background: var(--color-white);
+    }
+
+    .search-input-wrap {
+      position: relative;
+    }
+
+    .search-input-wrap svg {
+      position: absolute;
+      left: 13px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--color-text-soft);
+      pointer-events: none;
+    }
+
+    .search-input-wrap .field__control {
+      padding-left: 40px;
+    }
+
+    .list-meta {
+      padding: 13px 18px;
+      border-bottom: 1px solid var(--color-border);
+      background: #fbfbfb;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      color: var(--color-text-muted);
+      font-size: 13px;
+    }
+
+    .list-meta strong {
+      color: var(--color-text-main);
+    }
+
+    .tube-list {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .tube-row {
+      display: grid;
+      grid-template-columns: 150px minmax(180px, 1.2fr) minmax(140px, 0.75fr) minmax(130px, 0.8fr) 158px 40px;
+      gap: 12px;
+      padding: 16px 18px;
+      align-items: center;
+      border-bottom: 1px solid var(--color-border);
+      background: var(--color-white);
+      transition:
+        background var(--transition),
+        transform var(--transition);
+    }
+
+    .tube-row:hover {
+      background: #fcfcfc;
+    }
+
+    .tube-row:last-child {
+      border-bottom: 0;
+    }
+
+    .tube-row--header {
+      min-height: 44px;
+      padding-top: 11px;
+      padding-bottom: 11px;
+      color: var(--color-text-muted);
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.035em;
+      background: #fafafa;
+    }
+
+    .tube-row--header:hover {
+      background: #fafafa;
+    }
+
+    .tube-code {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 0;
+    }
+
+    .tube-code__main {
+      font-size: 14px;
+      font-weight: 830;
+      letter-spacing: -0.01em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .tube-code__sub {
+      color: var(--color-text-muted);
+      font-size: 12px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .tube-patient {
+      min-width: 0;
+    }
+
+    .tube-patient__name {
+      font-size: 14px;
+      font-weight: 780;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .tube-patient__meta {
+      margin-top: 4px;
+      color: var(--color-text-muted);
+      font-size: 12px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .tube-text {
+      min-width: 0;
+      font-size: 13px;
+      color: var(--color-text-main);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .tube-muted {
+      color: var(--color-text-muted);
+      font-size: 12px;
+      margin-top: 4px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      min-height: 28px;
+      padding: 4px 9px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 820;
+      white-space: nowrap;
+      width: fit-content;
+    }
+
+    .badge::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: currentColor;
+      opacity: 0.9;
+    }
+
+    .badge--accepted {
+      color: var(--color-success);
+      background: var(--color-success-bg);
+    }
+
+    .badge--warning {
+      color: var(--color-warning);
+      background: var(--color-warning-bg);
+    }
+
+    .badge--rejected {
+      color: var(--color-danger);
+      background: var(--color-danger-bg);
+    }
+
+    .badge--not-found {
+      color: #585858;
+      background: #eeeeee;
+    }
+
+    .icon-button {
+      width: 38px;
+      height: 38px;
+      border: 1px solid var(--color-border);
+      border-radius: 12px;
+      background: var(--color-white);
+      color: var(--color-text-main);
+      display: inline-grid;
+      place-items: center;
+      transition:
+        background var(--transition),
+        border-color var(--transition),
+        transform var(--transition);
+    }
+
+    .icon-button:hover {
+      background: #fafafa;
+      border-color: var(--color-border-strong);
+      transform: translateY(-1px);
+    }
+
+    .empty-state {
+      padding: 48px 22px;
+      text-align: center;
+      display: none;
+    }
+
+    .empty-state.is-visible {
+      display: block;
+    }
+
+    .empty-state__icon {
+      width: 58px;
+      height: 58px;
+      margin: 0 auto 16px;
+      border-radius: 18px;
+      background: #f7f7f7;
+      border: 1px solid var(--color-border);
+      display: grid;
+      place-items: center;
+      color: var(--color-text-muted);
+    }
+
+    .empty-state h3 {
+      margin: 0;
+      font-size: 18px;
+      letter-spacing: -0.02em;
+    }
+
+    .empty-state p {
+      max-width: 440px;
+      margin: 8px auto 0;
+      color: var(--color-text-muted);
+      font-size: 14px;
+    }
+
+    /* =========================================================
+       МОДАЛЬНЫЕ ОКНА
+       ========================================================= */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.42);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      z-index: 50;
+    }
+
+    .modal-backdrop.is-open {
+      display: flex;
+    }
+
+    .modal {
+      width: min(100%, 620px);
+      max-height: min(92vh, 760px);
+      overflow: auto;
+      background: var(--color-white);
+      border-radius: 24px;
+      box-shadow: var(--shadow-md);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      animation: modalIn 150ms ease;
+    }
+
+    .modal--wide {
+      width: min(100%, 920px);
+    }
+
+    @keyframes modalIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px) scale(0.98);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .modal__header {
+      padding: 20px 22px 16px;
+      border-bottom: 1px solid var(--color-border);
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+      position: sticky;
+      top: 0;
+      background: var(--color-white);
+      z-index: 2;
+    }
+
+    .modal__title {
+      margin: 0;
+      font-size: 20px;
+      letter-spacing: -0.03em;
+    }
+
+    .modal__subtitle {
+      margin: 5px 0 0;
+      color: var(--color-text-muted);
+      font-size: 13px;
+    }
+
+    .modal__body {
+      padding: 22px;
+    }
+
+    .modal__footer {
+      padding: 16px 22px 22px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 10px;
+      border-top: 1px solid var(--color-border);
+      background: var(--color-white);
+      position: sticky;
+      bottom: 0;
+      z-index: 2;
+    }
+
+    .close-button {
+      width: 38px;
+      height: 38px;
+      border: 1px solid var(--color-border);
+      background: var(--color-white);
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      color: var(--color-text-muted);
+    }
+
+    .close-button:hover {
+      border-color: var(--color-border-strong);
+      color: var(--color-text-main);
+    }
+
+    .scan-modal-panel {
+      display: grid;
+      gap: 18px;
+    }
+
+    .scanner-visual {
+      border: 1px dashed var(--color-border-strong);
+      border-radius: var(--radius-lg);
+      min-height: 166px;
+      background:
+        linear-gradient(90deg, rgba(236, 105, 50, 0.08) 1px, transparent 1px),
+        linear-gradient(rgba(236, 105, 50, 0.08) 1px, transparent 1px),
+        #fbfbfb;
+      background-size: 24px 24px;
+      display: grid;
+      place-items: center;
+      padding: 22px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .scanner-visual::before {
+      content: "";
+      position: absolute;
+      left: 10%;
+      right: 10%;
+      top: 50%;
+      height: 2px;
+      background: var(--color-accent);
+      box-shadow: 0 0 18px rgba(236, 105, 50, 0.5);
+      opacity: 0.78;
+      animation: scanLine 1.7s ease-in-out infinite;
+    }
+
+    @keyframes scanLine {
+      0% {
+        transform: translateY(-54px);
+      }
+
+      50% {
+        transform: translateY(54px);
+      }
+
+      100% {
+        transform: translateY(-54px);
+      }
+    }
+
+    .scanner-visual__content {
+      position: relative;
+      z-index: 1;
+      background: rgba(255, 255, 255, 0.82);
+      border: 1px solid var(--color-border);
+      border-radius: 16px;
+      padding: 14px 16px;
+      backdrop-filter: blur(8px);
+    }
+
+    .scanner-visual__title {
+      margin: 0;
+      font-weight: 830;
+      letter-spacing: -0.02em;
+    }
+
+    .scanner-visual__desc {
+      margin: 5px 0 0;
+      color: var(--color-text-muted);
+      font-size: 13px;
+    }
+
+    .state-message {
+      border-radius: var(--radius-md);
+      padding: 13px 14px;
+      display: none;
+      gap: 10px;
+      align-items: flex-start;
+      font-size: 14px;
+      border: 1px solid transparent;
+    }
+
+    .state-message.is-visible {
+      display: flex;
+    }
+
+    .state-message__icon {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      flex: 0 0 auto;
+      display: grid;
+      place-items: center;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .state-message__title {
+      font-weight: 830;
+    }
+
+    .state-message__text {
+      margin-top: 2px;
+      color: var(--color-text-muted);
+      font-size: 13px;
+    }
+
+    .state-message--loading {
+      background: var(--color-info-bg);
+      color: var(--color-info);
+      border-color: rgba(36, 82, 163, 0.12);
+    }
+
+    .state-message--success {
+      background: var(--color-success-bg);
+      color: var(--color-success);
+      border-color: rgba(20, 122, 69, 0.12);
+    }
+
+    .state-message--error {
+      background: var(--color-danger-bg);
+      color: var(--color-danger);
+      border-color: rgba(180, 35, 24, 0.12);
+    }
+
+    .loader {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 3px solid rgba(36, 82, 163, 0.18);
+      border-top-color: var(--color-info);
+      animation: spin 0.75s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* =========================================================
+       КАРТОЧКА ПРОВЕРКИ ПРОБИРКИ
+       ========================================================= */
+    .tube-card-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 280px;
+      gap: 18px;
+    }
+
+    .details-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .detail-box {
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: 13px;
+      background: #fbfbfb;
+      min-width: 0;
+    }
+
+    .detail-box--wide {
+      grid-column: 1 / -1;
+    }
+
+    .detail-box__label {
+      color: var(--color-text-muted);
+      font-size: 12px;
+      font-weight: 750;
+      margin-bottom: 5px;
+    }
+
+    .detail-box__value {
+      font-size: 14px;
+      font-weight: 760;
+      word-break: break-word;
+    }
+
+    .detail-box__sub {
+      margin-top: 5px;
+      color: var(--color-text-muted);
+      font-size: 12px;
+    }
+
+    .checklist {
+      margin-top: 18px;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+    }
+
+    .checklist__title {
+      padding: 13px 14px;
+      background: #fafafa;
+      border-bottom: 1px solid var(--color-border);
+      font-size: 14px;
+      font-weight: 820;
+    }
+
+    .check-item {
+      display: grid;
+      grid-template-columns: 22px minmax(0, 1fr);
+      gap: 10px;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--color-border);
+      cursor: pointer;
+    }
+
+    .check-item:last-child {
+      border-bottom: 0;
+    }
+
+    .check-item input {
+      width: 17px;
+      height: 17px;
+      accent-color: var(--color-accent);
+      margin-top: 2px;
+    }
+
+    .check-item__label {
+      font-size: 14px;
+      font-weight: 760;
+    }
+
+    .check-item__hint {
+      margin-top: 3px;
+      color: var(--color-text-muted);
+      font-size: 12px;
+    }
+
+    .decision-panel {
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      background: #fbfbfb;
+      height: fit-content;
+    }
+
+    .decision-panel h3 {
+      margin: 0 0 8px;
+      font-size: 16px;
+      letter-spacing: -0.02em;
+    }
+
+    .decision-panel p {
+      margin: 0 0 14px;
+      color: var(--color-text-muted);
+      font-size: 13px;
+    }
+
+    .decision-actions {
+      display: grid;
+      gap: 10px;
+    }
+
+    .textarea {
+      width: 100%;
+      min-height: 94px;
+      resize: vertical;
+      border: 1px solid var(--color-border);
+      border-radius: 12px;
+      padding: 11px 12px;
+      background: var(--color-white);
+      color: var(--color-text-main);
+    }
+
+    .textarea:focus {
+      outline: none;
+      border-color: var(--color-accent);
+      box-shadow: 0 0 0 4px rgba(236, 105, 50, 0.12);
+    }
+
+    .decision-warning {
+      margin-top: 12px;
+      padding: 11px 12px;
+      border-radius: 13px;
+      background: var(--color-warning-bg);
+      color: var(--color-warning);
+      font-size: 12px;
+      font-weight: 730;
+      display: none;
+    }
+
+    .decision-warning.is-visible {
+      display: block;
+    }
+
+    /* =========================================================
+       TOAST-УВЕДОМЛЕНИЯ
+       ========================================================= */
+    .toast-region {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      display: grid;
+      gap: 10px;
+      z-index: 80;
+      width: min(360px, calc(100vw - 36px));
+      pointer-events: none;
+    }
+
+    .toast {
+      background: var(--color-black);
+      color: var(--color-white);
+      border-radius: 16px;
+      padding: 13px 14px;
+      box-shadow: var(--shadow-md);
+      display: grid;
+      grid-template-columns: 22px minmax(0, 1fr);
+      gap: 10px;
+      animation: toastIn 180ms ease;
+      pointer-events: auto;
+    }
+
+    @keyframes toastIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .toast__icon {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--color-accent);
+      display: grid;
+      place-items: center;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .toast__title {
+      font-weight: 820;
+      font-size: 13px;
+    }
+
+    .toast__text {
+      margin-top: 2px;
+      color: rgba(255, 255, 255, 0.72);
+      font-size: 12px;
+    }
+
+    /* =========================================================
+       АДАПТИВНОСТЬ
+       Требование: desktop-first, простая адаптация от 360px
+       ========================================================= */
+    @media (max-width: 1080px) {
+      .hero,
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+
+      .filters-card {
+        position: static;
+      }
+
+      .filters-group {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .scan-panel {
+        grid-template-columns: 1fr;
+      }
+
+      .manual-entry {
+        max-width: 520px;
+      }
+
+      .tube-row {
+        grid-template-columns: 130px minmax(180px, 1fr) minmax(130px, 0.7fr) 140px 40px;
+      }
+
+      .tube-row > :nth-child(4) {
+        display: none;
+      }
+
+      .tube-row--header > :nth-child(4) {
+        display: none;
+      }
+    }
+
+    @media (max-width: 780px) {
+      .app-header__inner {
+        align-items: flex-start;
+        flex-direction: column;
+        padding: 14px 16px;
+      }
+
+      .header-meta {
+        justify-content: flex-start;
+        width: 100%;
+      }
+
+      .main {
+        padding: 18px 16px 32px;
+      }
+
+      .summary-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .list-toolbar {
+        grid-template-columns: 1fr;
+      }
+
+      .filters-group {
+        grid-template-columns: 1fr;
+      }
+
+      .tube-row,
+      .tube-row--header {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+
+      .tube-row--header {
+        display: none;
+      }
+
+      .tube-row {
+        position: relative;
+        padding-right: 62px;
+      }
+
+      .tube-row > :nth-child(3),
+      .tube-row > :nth-child(4) {
+        display: block;
+      }
+
+      .tube-row .icon-button {
+        position: absolute;
+        right: 16px;
+        top: 16px;
+      }
+
+      .tube-card-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .details-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .modal {
+        border-radius: 20px;
+      }
+
+      .modal__footer {
+        justify-content: stretch;
+      }
+
+      .modal__footer .button {
+        flex: 1 1 auto;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .brand__title {
+        white-space: normal;
+      }
+
+      .operator-card {
+        width: 100%;
+        border-radius: 16px;
+      }
+
+      .status-pill {
+        width: 100%;
+        justify-content: center;
+      }
+
+      .summary-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .primary-actions {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .primary-actions .button {
+        width: 100%;
+      }
+
+      .keyboard-hint {
+        text-align: center;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="page">
+    <!-- =========================================================
+         HEADER
+         ========================================================= -->
+    <header class="app-header">
+      <div class="app-header__inner">
+        <div class="brand" aria-label="Лабораторная информационная система">
+          <div class="brand__mark" aria-hidden="true">Л</div>
+
+          <div class="brand__text">
+            <p class="brand__eyebrow">ЛИС · Модуль приёма биоматериалов</p>
+            <p class="brand__title">Очередь приёмки / Рабочее место приёмщика</p>
+          </div>
+        </div>
+
+        <div class="header-meta">
+          <div class="status-pill" title="Сканер подключен">
+            <span class="status-dot" aria-hidden="true"></span>
+            Сканер активен
+          </div>
+
+          <div class="operator-card" aria-label="Текущий пользователь">
+            <div class="operator-card__avatar" aria-hidden="true">АП</div>
+            <div>
+              <div class="operator-card__name">Анна Петрова</div>
+              <div class="operator-card__shift" id="shiftTime">Смена: 09:00–18:00</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- =========================================================
+         MAIN CONTENT
+         ========================================================= -->
+    <main class="main">
+      <!-- =========================================================
+           HERO: ОСНОВНОЕ ДЕЙСТВИЕ + СЧЁТЧИКИ ЗА СМЕНУ
+           ========================================================= -->
+      <section class="hero" aria-labelledby="pageTitle">
+        <div class="card scan-panel">
+          <div class="scan-panel__content">
+            <div class="page-kicker">
+              <span class="page-kicker__icon" aria-hidden="true"></span>
+              Стартовый экран приёмки
+            </div>
+
+            <h1 id="pageTitle">Сканирование поступивших пробирок</h1>
+
+            <p class="lead">
+              Отсканируйте штрихкод пробирки или введите его вручную.
+              После успешной идентификации система откроет карточку проверки пробирки.
+            </p>
+
+            <div class="primary-actions">
+              <button class="button button--primary" type="button" id="openScanModalBtn">
+                <span class="button__icon" aria-hidden="true">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+                    <path d="M4 7V5a1 1 0 0 1 1-1h2M17 4h2a1 1 0 0 1 1 1v2M20 17v2a1 1 0 0 1-1 1h-2M7 20H5a1 1 0 0 1-1-1v-2M7 9h10M7 12h10M7 15h7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                  </svg>
+                </span>
+                Сканировать пробирку
+              </button>
+
+              <span class="keyboard-hint">
+                Быстрый запуск: <span class="kbd">Alt</span> + <span class="kbd">S</span>
+              </span>
+            </div>
+          </div>
+
+          <form class="manual-entry" id="manualScanForm" novalidate>
+            <div class="field">
+              <label class="field__label" for="manualBarcode">Ручной ввод штрихкода</label>
+              <input
+                class="field__control"
+                id="manualBarcode"
+                name="manualBarcode"
+                type="text"
+                autocomplete="off"
+                placeholder="Например: BIO-2026-00041"
+                aria-describedby="manualBarcodeHint manualBarcodeError"
+              />
+              <div class="field__hint" id="manualBarcodeHint">
+                Используйте, если сканер не сработал или этикетка повреждена.
+              </div>
+              <div class="field__error" id="manualBarcodeError" aria-live="polite"></div>
+            </div>
+
+            <button class="button button--secondary" type="submit">
+              Найти заказ
+            </button>
+          </form>
+        </div>
+
+        <aside class="card shift-summary" aria-labelledby="shiftCountersTitle">
+          <div class="card-title-row">
+            <div>
+              <h2 class="card-title" id="shiftCountersTitle">Счётчики за смену</h2>
+              <p class="card-subtitle">Обновляются после каждого решения</p>
+            </div>
+          </div>
+
+          <div class="summary-grid">
+            <div class="summary-item summary-item--accepted">
+              <div class="summary-item__label">Принято</div>
+              <div class="summary-item__value" id="counterAccepted">0</div>
+              <div class="summary-item__trend">Без замечаний</div>
+            </div>
+
+            <div class="summary-item summary-item--warning">
+              <div class="summary-item__label">С замечаниями</div>
+              <div class="summary-item__value" id="counterAcceptedWithNotes">0</div>
+              <div class="summary-item__trend">Требует внимания</div>
+            </div>
+
+            <div class="summary-item summary-item--danger">
+              <div class="summary-item__label">Отклонено</div>
+              <div class="summary-item__value" id="counterRejected">0</div>
+              <div class="summary-item__trend">Не передано в работу</div>
+            </div>
+
+            <div class="summary-item summary-item--notfound">
+              <div class="summary-item__label">Не найдено</div>
+              <div class="summary-item__value" id="counterNotFound">0</div>
+              <div class="summary-item__trend">Ошибка идентификации</div>
+            </div>
+          </div>
+        </aside>
+      </section>
+
+      <!-- =========================================================
+           РАБОЧАЯ ОБЛАСТЬ: ФИЛЬТРЫ + СПИСОК ПОСЛЕДНИХ СКАНИРОВАНИЙ
+           ========================================================= -->
+      <section class="workspace" aria-label="Последние просканированные пробирки">
+        <aside class="card filters-card" aria-labelledby="filtersTitle">
+          <div class="filters-card__header">
+            <h2 class="filters-title" id="filtersTitle">Фильтры</h2>
+            <button class="icon-button" type="button" id="resetFiltersBtn" aria-label="Сбросить фильтры">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M4 4v6h6M20 20v-6h-6M5 14a7 7 0 0 0 12 3l3-3M19 10A7 7 0 0 0 7 7l-3 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+          </div>
+
+          <div class="filters-group" id="statusFilters">
+            <label class="filter-option">
+              <input type="checkbox" name="status" value="accepted" checked />
+              <span class="filter-option__label">Принят</span>
+              <span class="filter-option__count" id="filterCountAccepted">0</span>
+            </label>
+
+            <label class="filter-option">
+              <input type="checkbox" name="status" value="acceptedWithNotes" checked />
+              <span class="filter-option__label">Принят с замечаниями</span>
+              <span class="filter-option__count" id="filterCountAcceptedWithNotes">0</span>
+            </label>
+
+            <label class="filter-option">
+              <input type="checkbox" name="status" value="rejected" checked />
+              <span class="filter-option__label">Отклонён</span>
+              <span class="filter-option__count" id="filterCountRejected">0</span>
+            </label>
+
+            <label class="filter-option">
+              <input type="checkbox" name="status" value="notFound" checked />
+              <span class="filter-option__label">Ошибка идентификации</span>
+              <span class="filter-option__count" id="filterCountNotFound">0</span>
+            </label>
+          </div>
+
+          <div class="filters-actions">
+            <button class="button button--ghost" type="button" id="selectAllStatusesBtn">
+              Выбрать все статусы
+            </button>
+          </div>
+        </aside>
+
+        <section class="card list-card" aria-labelledby="recentScansTitle">
+          <div class="list-toolbar">
+            <div class="field">
+              <label class="field__label" for="searchInput">Поиск по списку</label>
+              <div class="search-input-wrap">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="m21 21-4.35-4.35M10.8 18.1a7.3 7.3 0 1 1 0-14.6 7.3 7.3 0 0 1 0 14.6Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+                <input
+                  class="field__control"
+                  id="searchInput"
+                  type="search"
+                  placeholder="Штрихкод, ФИО пациента, заказ..."
+                  autocomplete="off"
+                />
+              </div>
+            </div>
+
+            <div class="field">
+              <label class="field__label" for="sortSelect">Сортировка</label>
+              <select class="field__control" id="sortSelect">
+                <option value="newest">Сначала новые</option>
+                <option value="oldest">Сначала старые</option>
+                <option value="patientAsc">Пациент А–Я</option>
+                <option value="statusAsc">Статус А–Я</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="list-meta">
+            <span>Найдено: <strong id="visibleRowsCount">0</strong></span>
+            <span>Всего за смену: <strong id="totalRowsCount">0</strong></span>
+          </div>
+
+          <div class="tube-list" id="tubeList" aria-live="polite">
+            <div class="tube-row tube-row--header" aria-hidden="true">
+              <div>Штрихкод</div>
+              <div>Пациент</div>
+              <div>Биоматериал</div>
+              <div>Время</div>
+              <div>Статус</div>
+              <div></div>
+            </div>
+          </div>
+
+          <div class="empty-state" id="emptyState">
+            <div class="empty-state__icon" aria-hidden="true">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+                <path d="M10.5 20a8.5 8.5 0 1 0 0-17 8.5 8.5 0 0 0 0 17ZM21 21l-4.5-4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <h3>Нет пробирок по выбранным условиям</h3>
+            <p>Измените фильтры, поисковый запрос или отсканируйте новую пробирку.</p>
+          </div>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <!-- =========================================================
+       МОДАЛЬНОЕ ОКНО: ОЖИДАНИЕ СКАНИРОВАНИЯ
+       ========================================================= -->
+  <div class="modal-backdrop" id="scanModal" role="dialog" aria-modal="true" aria-labelledby="scanModalTitle">
+    <div class="modal">
+      <div class="modal__header">
+        <div>
+          <h2 class="modal__title" id="scanModalTitle">Сканирование пробирки</h2>
+          <p class="modal__subtitle">
+            Поднесите пробирку к сканеру или введите штрихкод вручную.
+          </p>
+        </div>
+
+        <button class="close-button" type="button" data-close-modal="scanModal" aria-label="Закрыть окно сканирования">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+
+      <form class="modal__body scan-modal-panel" id="scanModalForm" novalidate>
+        <div class="scanner-visual" aria-hidden="true">
+          <div class="scanner-visual__content">
+            <p class="scanner-visual__title">Ожидание штрихкода</p>
+            <p class="scanner-visual__desc">
+              Для демо используйте: BIO-2026-00041, BIO-2026-00042 или BIO-2026-404
+            </p>
+          </div>
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="modalBarcode">Поле штрихкода</label>
+          <input
+            class="field__control"
+            id="modalBarcode"
+            name="modalBarcode"
+            type="text"
+            autocomplete="off"
+            placeholder="Сканируйте или введите штрихкод"
+            aria-describedby="modalBarcodeError"
+          />
+          <div class="field__error" id="modalBarcodeError" aria-live="polite"></div>
+        </div>
+
+        <div class="state-message state-message--loading" id="scanLoadingMessage" role="status">
+          <div class="loader" aria-hidden="true"></div>
+          <div>
+            <div class="state-message__title">Идёт поиск заказа…</div>
+            <div class="state-message__text">Система ищет штрихкод в ЛИС и проверяет срок годности биоматериала.</div>
+          </div>
+        </div>
+
+        <div class="state-message state-message--success" id="scanSuccessMessage" role="status">
+          <div class="state-message__icon" aria-hidden="true">✓</div>
+          <div>
+            <div class="state-message__title">Заказ найден</div>
+            <div class="state-message__text">Открываем карточку проверки пробирки.</div>
+          </div>
+        </div>
+
+        <div class="state-message state-message--error" id="scanErrorMessage" role="alert">
+          <div class="state-message__icon" aria-hidden="true">!</div>
+          <div>
+            <div class="state-message__title">Штрихкод не найден в ЛИС</div>
+            <div class="state-message__text">Проверьте корректность штрихкода или зарегистрируйте ошибку идентификации.</div>
+          </div>
+        </div>
+      </form>
+
+      <div class="modal__footer">
+        <button class="button button--ghost" type="button" data-close-modal="scanModal">
+          Отмена
+        </button>
+
+        <button class="button button--primary" type="submit" form="scanModalForm" id="scanModalSubmitBtn">
+          Найти заказ
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       МОДАЛЬНОЕ ОКНО: КАРТОЧКА ПРОВЕРКИ ПРОБИРКИ
+       ========================================================= -->
+  <div class="modal-backdrop" id="tubeCardModal" role="dialog" aria-modal="true" aria-labelledby="tubeCardModalTitle">
+    <div class="modal modal--wide">
+      <div class="modal__header">
+        <div>
+          <h2 class="modal__title" id="tubeCardModalTitle">Карточка проверки пробирки</h2>
+          <p class="modal__subtitle" id="tubeCardModalSubtitle">
+            Проверьте найденный заказ и примите решение по приёмке.
+          </p>
+        </div>
+
+        <button class="close-button" type="button" data-close-modal="tubeCardModal" aria-label="Закрыть карточку проверки">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="modal__body">
+        <div class="tube-card-layout">
+          <div>
+            <div class="details-grid" id="tubeDetails">
+              <!-- Детальные поля пробирки заполняются через JS -->
+            </div>
+
+            <div class="checklist" aria-labelledby="checklistTitle">
+              <div class="checklist__title" id="checklistTitle">Контрольные проверки</div>
+
+              <label class="check-item">
+                <input type="checkbox" id="checkNameMatch" />
+                <span>
+                  <span class="check-item__label">ФИО на экране совпадает с этикеткой пробирки</span>
+                  <span class="check-item__hint">Обязательная проверка перед приёмкой.</span>
+                </span>
+              </label>
+
+              <label class="check-item">
+                <input type="checkbox" id="checkTubeIntact" />
+                <span>
+                  <span class="check-item__label">Пробирка целая, без протечек и повреждений</span>
+                  <span class="check-item__hint">Если есть повреждения — примите с замечаниями или отклоните.</span>
+                </span>
+              </label>
+
+              <label class="check-item">
+                <input type="checkbox" id="checkVolume" />
+                <span>
+                  <span class="check-item__label">Объём биоматериала соответствует норме</span>
+                  <span class="check-item__hint">Норма объёма берётся из карточки найденного заказа.</span>
+                </span>
+              </label>
+
+              <label class="check-item">
+                <input type="checkbox" id="checkShelfLife" />
+                <span>
+                  <span class="check-item__label">Срок годности биоматериала не истёк</span>
+                  <span class="check-item__hint">Дата забора + допустимый интервал для типа биоматериала.</span>
+                </span>
+              </label>
+            </div>
+          </div>
+
+          <aside class="decision-panel">
+            <h3>Решение по пробирке</h3>
+            <p>
+              Для приёмки без замечаний должны быть пройдены все обязательные проверки.
+            </p>
+
+            <div class="field">
+              <label class="field__label" for="decisionComment">Комментарий приёмщика</label>
+              <textarea
+                class="textarea"
+                id="decisionComment"
+                placeholder="Например: недостаточный объём, повреждение упаковки, расхождение данных..."
+              ></textarea>
+            </div>
+
+            <div class="decision-warning" id="decisionWarning" role="alert"></div>
+
+            <div class="decision-actions" style="margin-top: 14px;">
+              <button class="button button--success" type="button" id="acceptTubeBtn">
+                Принять
+              </button>
+
+              <button class="button button--primary" type="button" id="acceptWithNotesBtn">
+                Принять с замечаниями
+              </button>
+
+              <button class="button button--danger" type="button" id="rejectTubeBtn">
+                Отклонить
+              </button>
+
+              <!--
+                TODO: Здесь можно связать переход с отдельным HTML-файлом карточки пробирки.
+                Например:
+                window.location.href = 'tube-check.html?barcode=' + encodeURIComponent(currentTube.barcode);
+              -->
+              <a class="button button--ghost" id="futureTubeCardLink" href="tube-check.html" title="Заглушка для будущей связи между HTML-файлами">
+                Открыть отдельный экран
+              </a>
+            </div>
+          </aside>
+        </div>
+      </div>
+
+      <div class="modal__footer">
+        <button class="button button--ghost" type="button" data-close-modal="tubeCardModal">
+          Закрыть
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       ОБЛАСТЬ TOAST-УВЕДОМЛЕНИЙ
+       ========================================================= -->
+  <div class="toast-region" id="toastRegion" aria-live="polite" aria-atomic="true"></div>
+
+  <script>
+    /* =========================================================
+       НАСТРОЙКИ И МОК-ДАННЫЕ
+       Здесь удобно менять демо-данные, статусы, тексты и правила поиска
+       ========================================================= */
+
+    const STATUS_CONFIG = {
+      accepted: {
+        label: "Принят",
+        badgeClass: "badge--accepted",
+        counterId: "counterAccepted",
+        filterCountId: "filterCountAccepted"
+      },
+      acceptedWithNotes: {
+        label: "Принят с замечаниями",
+        badgeClass: "badge--warning",
+        counterId: "counterAcceptedWithNotes",
+        filterCountId: "filterCountAcceptedWithNotes"
+      },
+      rejected: {
+        label: "Отклонён",
+        badgeClass: "badge--rejected",
+        counterId: "counterRejected",
+        filterCountId: "filterCountRejected"
+      },
+      notFound: {
+        label: "Ошибка идентификации",
+        badgeClass: "badge--not-found",
+        counterId: "counterNotFound",
+        filterCountId: "filterCountNotFound"
+      }
+    };
+
+    const ORDER_MOCKS = [
+      {
+        barcode: "BIO-2026-00041",
+        orderId: "ORD-917240",
+        patientName: "Мария Соколова",
+        patientBirthDate: "1989-04-17",
+        biomaterialType: "Кровь",
+        analysisType: "Гормональная панель",
+        collectedAt: "2026-05-11T07:40:00",
+        allowedHours: 48,
+        volumeNorm: "4 мл",
+        kitId: "KIT-7741",
+        deliveryTrack: "USPS 9400 1000 0000 7741",
+        status: "pending"
+      },
+      {
+        barcode: "BIO-2026-00042",
+        orderId: "ORD-917241",
+        patientName: "Алексей Орлов",
+        patientBirthDate: "1978-11-02",
+        biomaterialType: "Слюна",
+        analysisType: "Генетический тест",
+        collectedAt: "2026-05-10T13:20:00",
+        allowedHours: 72,
+        volumeNorm: "2 мл",
+        kitId: "KIT-7742",
+        deliveryTrack: "USPS 9400 1000 0000 7742",
+        status: "pending"
+      },
+      {
+        barcode: "BIO-2026-00043",
+        orderId: "ORD-917242",
+        patientName: "Елена Волкова",
+        patientBirthDate: "1994-02-25",
+        biomaterialType: "Мазок",
+        analysisType: "ПЦР-панель",
+        collectedAt: "2026-05-07T09:10:00",
+        allowedHours: 48,
+        volumeNorm: "1 пробирка",
+        kitId: "KIT-7743",
+        deliveryTrack: "USPS 9400 1000 0000 7743",
+        status: "pending"
+      }
+    ];
+
+    let scannedTubes = [
+      {
+        id: cryptoRandomId(),
+        barcode: "BIO-2026-00037",
+        orderId: "ORD-917216",
+        patientName: "Ирина Мельникова",
+        biomaterialType: "Кровь",
+        analysisType: "Биохимический анализ",
+        scannedAt: minutesAgo(8),
+        status: "accepted",
+        comment: "Без замечаний"
+      },
+      {
+        id: cryptoRandomId(),
+        barcode: "BIO-2026-00038",
+        orderId: "ORD-917219",
+        patientName: "Дмитрий Павлов",
+        biomaterialType: "Слюна",
+        analysisType: "Генетический тест",
+        scannedAt: minutesAgo(17),
+        status: "acceptedWithNotes",
+        comment: "Небольшое повреждение внешней упаковки"
+      },
+      {
+        id: cryptoRandomId(),
+        barcode: "BIO-2026-00039",
+        orderId: "ORD-917221",
+        patientName: "Ольга Кузнецова",
+        biomaterialType: "Мазок",
+        analysisType: "ПЦР-панель",
+        scannedAt: minutesAgo(29),
+        status: "rejected",
+        comment: "Истёк срок годности биоматериала"
+      },
+      {
+        id: cryptoRandomId(),
+        barcode: "BIO-2026-404",
+        orderId: "—",
+        patientName: "—",
+        biomaterialType: "—",
+        analysisType: "—",
+        scannedAt: minutesAgo(36),
+        status: "notFound",
+        comment: "Штрихкод не найден в ЛИС"
+      }
+    ];
+
+    let currentTube = null;
+    let lastFocusedElement = null;
+    let scanTimer = null;
+
+    /* =========================================================
+       DOM-ЭЛЕМЕНТЫ
+       ========================================================= */
+
+    const elements = {
+      openScanModalBtn: document.getElementById("openScanModalBtn"),
+      manualScanForm: document.getElementById("manualScanForm"),
+      manualBarcode: document.getElementById("manualBarcode"),
+      manualBarcodeError: document.getElementById("manualBarcodeError"),
+
+      scanModal: document.getElementById("scanModal"),
+      scanModalForm: document.getElementById("scanModalForm"),
+      modalBarcode: document.getElementById("modalBarcode"),
+      modalBarcodeError: document.getElementById("modalBarcodeError"),
+      scanModalSubmitBtn: document.getElementById("scanModalSubmitBtn"),
+      scanLoadingMessage: document.getElementById("scanLoadingMessage"),
+      scanSuccessMessage: document.getElementById("scanSuccessMessage"),
+      scanErrorMessage: document.getElementById("scanErrorMessage"),
+
+      tubeCardModal: document.getElementById("tubeCardModal"),
+      tubeCardModalSubtitle: document.getElementById("tubeCardModalSubtitle"),
+      tubeDetails: document.getElementById("tubeDetails"),
+      futureTubeCardLink: document.getElementById("futureTubeCardLink"),
+
+      checkNameMatch: document.getElementById("checkNameMatch"),
+      checkTubeIntact: document.getElementById("checkTubeIntact"),
+      checkVolume: document.getElementById("checkVolume"),
+      checkShelfLife: document.getElementById("checkShelfLife"),
+
+      decisionComment: document.getElementById("decisionComment"),
+      decisionWarning: document.getElementById("decisionWarning"),
+      acceptTubeBtn: document.getElementById("acceptTubeBtn"),
+      acceptWithNotesBtn: document.getElementById("acceptWithNotesBtn"),
+      rejectTubeBtn: document.getElementById("rejectTubeBtn"),
+
+      statusFilters: document.getElementById("statusFilters"),
+      resetFiltersBtn: document.getElementById("resetFiltersBtn"),
+      selectAllStatusesBtn: document.getElementById("selectAllStatusesBtn"),
+      searchInput: document.getElementById("searchInput"),
+      sortSelect: document.getElementById("sortSelect"),
+
+      tubeList: document.getElementById("tubeList"),
+      emptyState: document.getElementById("emptyState"),
+      visibleRowsCount: document.getElementById("visibleRowsCount"),
+      totalRowsCount: document.getElementById("totalRowsCount"),
+
+      toastRegion: document.getElementById("toastRegion")
+    };
+
+    /* =========================================================
+       ИНИЦИАЛИЗАЦИЯ
+       ========================================================= */
+
+    document.addEventListener("DOMContentLoaded", () => {
+      bindEvents();
+      renderAll();
+      updateShiftTime();
+    });
+
+    function bindEvents() {
+      elements.openScanModalBtn.addEventListener("click", () => openScanModal());
+
+      elements.manualScanForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+        const barcode = elements.manualBarcode.value.trim();
+        handleManualScan(barcode);
+      });
+
+      elements.scanModalForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+        const barcode = elements.modalBarcode.value.trim();
+        handleModalScan(barcode);
+      });
+
+      elements.statusFilters.addEventListener("change", renderList);
+      elements.searchInput.addEventListener("input", renderList);
+      elements.sortSelect.addEventListener("change", renderList);
+
+      elements.resetFiltersBtn.addEventListener("click", resetFilters);
+      elements.selectAllStatusesBtn.addEventListener("click", selectAllFilters);
+
+      elements.acceptTubeBtn.addEventListener("click", () => saveDecision("accepted"));
+      elements.acceptWithNotesBtn.addEventListener("click", () => saveDecision("acceptedWithNotes"));
+      elements.rejectTubeBtn.addEventListener("click", () => saveDecision("rejected"));
+
+      document.querySelectorAll("[data-close-modal]").forEach((button) => {
+        button.addEventListener("click", () => closeModal(button.dataset.closeModal));
+      });
+
+      document.querySelectorAll(".modal-backdrop").forEach((backdrop) => {
+        backdrop.addEventListener("mousedown", (event) => {
+          if (event.target === backdrop) {
+            closeModal(backdrop.id);
+          }
+        });
+      });
+
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") {
+          closeTopModal();
+        }
+
+        if (event.altKey && event.code === "KeyS") {
+          event.preventDefault();
+          openScanModal();
+        }
+      });
+    }
+
+    function updateShiftTime() {
+      const now = new Date();
+      const formattedDate = new Intl.DateTimeFormat("ru-RU", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric"
+      }).format(now);
+
+      document.getElementById("shiftTime").textContent = `Смена: 09:00–18:00 · ${formattedDate}`;
+    }
+
+    /* =========================================================
+       ЛОГИКА СКАНИРОВАНИЯ
+       Здесь можно заменить mock-поиск на реальный API-запрос в ЛИС
+       ========================================================= */
+
+    function handleManualScan(rawBarcode) {
+      clearFieldError(elements.manualBarcode, elements.manualBarcodeError);
+
+      const validation = validateBarcode(rawBarcode);
+
+      if (!validation.valid) {
+        setFieldError(elements.manualBarcode, elements.manualBarcodeError, validation.message);
+        return;
+      }
+
+      searchOrder(rawBarcode, {
+        source: "manual",
+        onLoading: () => {
+          showToast("Поиск заказа", "Проверяем штрихкод в ЛИС…");
+        },
+        onSuccess: (order) => {
+          elements.manualBarcode.value = "";
+          openTubeCard(order);
+        },
+        onError: (barcode) => {
+          elements.manualBarcode.value = "";
+          registerNotFound(barcode);
+          showToast("Штрихкод не найден в ЛИС", "Ошибка идентификации добавлена в список.");
+        }
+      });
+    }
+
+    function handleModalScan(rawBarcode) {
+      clearFieldError(elements.modalBarcode, elements.modalBarcodeError);
+      setScanState("idle");
+
+      const validation = validateBarcode(rawBarcode);
+
+      if (!validation.valid) {
+        setFieldError(elements.modalBarcode, elements.modalBarcodeError, validation.message);
+        return;
+      }
+
+      searchOrder(rawBarcode, {
+        source: "modal",
+        onLoading: () => {
+          elements.scanModalSubmitBtn.disabled = true;
+          setScanState("loading");
+        },
+        onSuccess: (order) => {
+          setScanState("success");
+
+          scanTimer = window.setTimeout(() => {
+            elements.scanModalSubmitBtn.disabled = false;
+            closeModal("scanModal");
+            openTubeCard(order);
+          }, 650);
+        },
+        onError: (barcode) => {
+          elements.scanModalSubmitBtn.disabled = false;
+          setScanState("error");
+          registerNotFound(barcode);
+        }
+      });
+    }
+
+    function searchOrder(barcode, callbacks) {
+      callbacks.onLoading?.();
+
+      window.setTimeout(() => {
+        const normalizedBarcode = normalizeBarcode(barcode);
+        const order = ORDER_MOCKS.find((item) => normalizeBarcode(item.barcode) === normalizedBarcode);
+
+        if (order) {
+          callbacks.onSuccess?.({
+            ...order,
+            shelfLife: calculateShelfLife(order.collectedAt, order.allowedHours)
+          });
+        } else {
+          callbacks.onError?.(barcode);
+        }
+      }, callbacks.source === "modal" ? 850 : 450);
+    }
+
+    function validateBarcode(value) {
+      if (!value) {
+        return {
+          valid: false,
+          message: "Введите или отсканируйте штрихкод."
+        };
+      }
+
+      if (value.length < 6) {
+        return {
+          valid: false,
+          message: "Штрихкод слишком короткий. Проверьте ввод."
+        };
+      }
+
+      return {
+        valid: true,
+        message: ""
+      };
+    }
+
+    function normalizeBarcode(value) {
+      return String(value || "").trim().toUpperCase();
+    }
+
+    function setScanState(state) {
+      elements.scanLoadingMessage.classList.toggle("is-visible", state === "loading");
+      elements.scanSuccessMessage.classList.toggle("is-visible", state === "success");
+      elements.scanErrorMessage.classList.toggle("is-visible", state === "error");
+    }
+
+    function registerNotFound(barcode) {
+      scannedTubes.unshift({
+        id: cryptoRandomId(),
+        barcode: normalizeBarcode(barcode),
+        orderId: "—",
+        patientName: "—",
+        biomaterialType: "—",
+        analysisType: "—",
+        scannedAt: new Date().toISOString(),
+        status: "notFound",
+        comment: "Штрихкод не найден в ЛИС"
+      });
+
+      renderAll();
+    }
+
+    /* =========================================================
+       КАРТОЧКА ПРОВЕРКИ ПРОБИРКИ
+       ========================================================= */
+
+    function openTubeCard(order) {
+      currentTube = {
+        ...order,
+        id: cryptoRandomId(),
+        scannedAt: new Date().toISOString()
+      };
+
+      resetTubeChecks(order);
+      renderTubeDetails(currentTube);
+
+      elements.tubeCardModalSubtitle.textContent =
+        `${currentTube.barcode} · ${currentTube.patientName} · ${currentTube.biomaterialType}`;
+
+      elements.futureTubeCardLink.href =
+        `tube-check.html?barcode=${encodeURIComponent(currentTube.barcode)}`;
+
+      openModal("tubeCardModal");
+
+      window.setTimeout(() => {
+        elements.checkNameMatch.focus();
+      }, 80);
+    }
+
+    function resetTubeChecks(order) {
+      elements.checkNameMatch.checked = false;
+      elements.checkTubeIntact.checked = false;
+      elements.checkVolume.checked = false;
+      elements.checkShelfLife.checked = Boolean(order.shelfLife?.isValid);
+      elements.decisionComment.value = "";
+      hideDecisionWarning();
+    }
+
+    function renderTubeDetails(tube) {
+      const shelfLifeLabel = tube.shelfLife.isValid
+        ? "Срок годности не истёк"
+        : "Срок годности истёк";
+
+      const shelfLifeBadgeClass = tube.shelfLife.isValid
+        ? "badge badge--accepted"
+        : "badge badge--rejected";
+
+      elements.tubeDetails.innerHTML = `
+        <div class="detail-box">
+          <div class="detail-box__label">Штрихкод</div>
+          <div class="detail-box__value">${escapeHtml(tube.barcode)}</div>
+          <div class="detail-box__sub">Идентификатор пробирки</div>
+        </div>
+
+        <div class="detail-box">
+          <div class="detail-box__label">Заказ в ЛИС</div>
+          <div class="detail-box__value">${escapeHtml(tube.orderId)}</div>
+          <div class="detail-box__sub">Найден по штрихкоду</div>
+        </div>
+
+        <div class="detail-box detail-box--wide">
+          <div class="detail-box__label">Пациент</div>
+          <div class="detail-box__value">${escapeHtml(tube.patientName)}</div>
+          <div class="detail-box__sub">Дата рождения: ${formatDate(tube.patientBirthDate)}</div>
+        </div>
+
+        <div class="detail-box">
+          <div class="detail-box__label">Тип биоматериала</div>
+          <div class="detail-box__value">${escapeHtml(tube.biomaterialType)}</div>
+          <div class="detail-box__sub">Норма объёма: ${escapeHtml(tube.volumeNorm)}</div>
+        </div>
+
+        <div class="detail-box">
+          <div class="detail-box__label">Тип анализа</div>
+          <div class="detail-box__value">${escapeHtml(tube.analysisType)}</div>
+          <div class="detail-box__sub">Передать в профильное подразделение</div>
+        </div>
+
+        <div class="detail-box">
+          <div class="detail-box__label">Дата забора</div>
+          <div class="detail-box__value">${formatDateTime(tube.collectedAt)}</div>
+          <div class="detail-box__sub">Отмечена пациентом в приложении</div>
+        </div>
+
+        <div class="detail-box">
+          <div class="detail-box__label">Допустимый интервал</div>
+          <div class="detail-box__value">${tube.allowedHours} ч</div>
+          <div class="detail-box__sub">Справочник типа биоматериала</div>
+        </div>
+
+        <div class="detail-box">
+          <div class="detail-box__label">Проверка срока годности</div>
+          <div class="detail-box__value">
+            <span class="${shelfLifeBadgeClass}">${shelfLifeLabel}</span>
+          </div>
+          <div class="detail-box__sub">Годен до: ${formatDateTime(tube.shelfLife.expiresAt)}</div>
+        </div>
+
+        <div class="detail-box">
+          <div class="detail-box__label">Почтовое отправление</div>
+          <div class="detail-box__value">${escapeHtml(tube.deliveryTrack)}</div>
+          <div class="detail-box__sub">Кит: ${escapeHtml(tube.kitId)}</div>
+        </div>
+      `;
+    }
+
+    function saveDecision(status) {
+      if (!currentTube) {
+        return;
+      }
+
+      const comment = elements.decisionComment.value.trim();
+
+      if (status === "accepted" && !allChecksPassed()) {
+        showDecisionWarning("Для статуса «Принят» нужно отметить все контрольные проверки.");
+        return;
+      }
+
+      if ((status === "acceptedWithNotes" || status === "rejected") && comment.length < 6) {
+        showDecisionWarning("Для решения с замечаниями или отклонения укажите комментарий приёмщика.");
+        elements.decisionComment.focus();
+        return;
+      }
+
+      const existingIndex = scannedTubes.findIndex((item) => item.barcode === currentTube.barcode);
+
+      const newRecord = {
+        id: currentTube.id,
+        barcode: currentTube.barcode,
+        orderId: currentTube.orderId,
+        patientName: currentTube.patientName,
+        biomaterialType: currentTube.biomaterialType,
+        analysisType: currentTube.analysisType,
+        scannedAt: currentTube.scannedAt,
+        status,
+        comment: comment || "Без замечаний"
+      };
+
+      if (existingIndex >= 0) {
+        scannedTubes.splice(existingIndex, 1);
+      }
+
+      scannedTubes.unshift(newRecord);
+
+      closeModal("tubeCardModal");
+      renderAll();
+
+      showToast("Решение сохранено", `${currentTube.barcode}: ${STATUS_CONFIG[status].label}.`);
+
+      currentTube = null;
+    }
+
+    function allChecksPassed() {
+      return [
+        elements.checkNameMatch,
+        elements.checkTubeIntact,
+        elements.checkVolume,
+        elements.checkShelfLife
+      ].every((checkbox) => checkbox.checked);
+    }
+
+    function showDecisionWarning(message) {
+      elements.decisionWarning.textContent = message;
+      elements.decisionWarning.classList.add("is-visible");
+    }
+
+    function hideDecisionWarning() {
+      elements.decisionWarning.textContent = "";
+      elements.decisionWarning.classList.remove("is-visible");
+    }
+
+    /* =========================================================
+       СПИСОК, ФИЛЬТРЫ, ПОИСК, СОРТИРОВКА
+       ========================================================= */
+
+    function renderAll() {
+      renderCounters();
+      renderList();
+    }
+
+    function renderCounters() {
+      const counters = getStatusCounters(scannedTubes);
+
+      Object.entries(STATUS_CONFIG).forEach(([status, config]) => {
+        const value = counters[status] || 0;
+
+        const counterElement = document.getElementById(config.counterId);
+        const filterCountElement = document.getElementById(config.filterCountId);
+
+        if (counterElement) {
+          counterElement.textContent = value;
+        }
+
+        if (filterCountElement) {
+          filterCountElement.textContent = value;
+        }
+      });
+
+      elements.totalRowsCount.textContent = scannedTubes.length;
+    }
+
+    function renderList() {
+      const filteredRows = getFilteredAndSortedRows();
+
+      elements.visibleRowsCount.textContent = filteredRows.length;
+
+      const header = elements.tubeList.querySelector(".tube-row--header");
+      elements.tubeList.innerHTML = "";
+      elements.tubeList.appendChild(header);
+
+      filteredRows.forEach((tube) => {
+        elements.tubeList.appendChild(createTubeRow(tube));
+      });
+
+      elements.emptyState.classList.toggle("is-visible", filteredRows.length === 0);
+    }
+
+    function getFilteredAndSortedRows() {
+      const activeStatuses = getActiveStatuses();
+      const searchQuery = elements.searchInput.value.trim().toLowerCase();
+      const sortMode = elements.sortSelect.value;
+
+      let rows = scannedTubes.filter((tube) => {
+        const matchesStatus = activeStatuses.includes(tube.status);
+
+        const searchableText = [
+          tube.barcode,
+          tube.orderId,
+          tube.patientName,
+          tube.biomaterialType,
+          tube.analysisType,
+          tube.comment
+        ].join(" ").toLowerCase();
+
+        const matchesSearch = !searchQuery || searchableText.includes(searchQuery);
+
+        return matchesStatus && matchesSearch;
+      });
+
+      rows = rows.sort((a, b) => {
+        if (sortMode === "oldest") {
+          return new Date(a.scannedAt) - new Date(b.scannedAt);
+        }
+
+        if (sortMode === "patientAsc") {
+          return a.patientName.localeCompare(b.patientName, "ru");
+        }
+
+        if (sortMode === "statusAsc") {
+          return STATUS_CONFIG[a.status].label.localeCompare(STATUS_CONFIG[b.status].label, "ru");
+        }
+
+        return new Date(b.scannedAt) - new Date(a.scannedAt);
+      });
+
+      return rows;
+    }
+
+    function createTubeRow(tube) {
+      const row = document.createElement("article");
+      row.className = "tube-row";
+      row.tabIndex = 0;
+      row.setAttribute("aria-label", `${tube.barcode}, ${STATUS_CONFIG[tube.status].label}`);
+
+      row.innerHTML = `
+        <div class="tube-code">
+          <div class="tube-code__main">${escapeHtml(tube.barcode)}</div>
+          <div class="tube-code__sub">${escapeHtml(tube.orderId)}</div>
+        </div>
+
+        <div class="tube-patient">
+          <div class="tube-patient__name">${escapeHtml(tube.patientName)}</div>
+          <div class="tube-patient__meta">${escapeHtml(tube.comment || "Без комментария")}</div>
+        </div>
+
+        <div>
+          <div class="tube-text">${escapeHtml(tube.biomaterialType)}</div>
+          <div class="tube-muted">${escapeHtml(tube.analysisType)}</div>
+        </div>
+
+        <div>
+          <div class="tube-text">${formatTime(tube.scannedAt)}</div>
+          <div class="tube-muted">${formatDate(tube.scannedAt)}</div>
+        </div>
+
+        <div>
+          <span class="badge ${STATUS_CONFIG[tube.status].badgeClass}">
+            ${STATUS_CONFIG[tube.status].label}
+          </span>
+        </div>
+
+        <button class="icon-button" type="button" aria-label="Открыть детали ${escapeHtml(tube.barcode)}">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      `;
+
+      const detailButton = row.querySelector("button");
+
+      detailButton.addEventListener("click", (event) => {
+        event.stopPropagation();
+        openExistingTubeDetails(tube);
+      });
+
+      row.addEventListener("dblclick", () => openExistingTubeDetails(tube));
+
+      row.addEventListener("keydown", (event) => {
+        if (event.key === "Enter") {
+          openExistingTubeDetails(tube);
+        }
+      });
+
+      return row;
+    }
+
+    function openExistingTubeDetails(tube) {
+      if (tube.status === "notFound") {
+        showToast("Ошибка идентификации", `${tube.barcode}: заказ не найден в ЛИС.`);
+        return;
+      }
+
+      const order = ORDER_MOCKS.find((item) => item.barcode === tube.barcode);
+
+      if (order) {
+        openTubeCard(order);
+      } else {
+        showToast("Карточка недоступна", "Для этой демо-записи нет полного mock-заказа.");
+      }
+    }
+
+    function getActiveStatuses() {
+      return Array.from(elements.statusFilters.querySelectorAll('input[name="status"]:checked'))
+        .map((input) => input.value);
+    }
+
+    function resetFilters() {
+      elements.statusFilters.querySelectorAll('input[name="status"]').forEach((input) => {
+        input.checked = true;
+      });
+
+      elements.searchInput.value = "";
+      elements.sortSelect.value = "newest";
+      renderList();
+
+      showToast("Фильтры сброшены", "Показаны все последние сканирования.");
+    }
+
+    function selectAllFilters() {
+      elements.statusFilters.querySelectorAll('input[name="status"]').forEach((input) => {
+        input.checked = true;
+      });
+
+      renderList();
+    }
+
+    function getStatusCounters(rows) {
+      return rows.reduce((acc, item) => {
+        acc[item.status] = (acc[item.status] || 0) + 1;
+        return acc;
+      }, {});
+    }
+
+    /* =========================================================
+       МОДАЛЬНЫЕ ОКНА И ДОСТУПНОСТЬ
+       ========================================================= */
+
+    function openScanModal() {
+      elements.modalBarcode.value = "";
+      clearFieldError(elements.modalBarcode, elements.modalBarcodeError);
+      setScanState("idle");
+      openModal("scanModal");
+
+      window.setTimeout(() => {
+        elements.modalBarcode.focus();
+      }, 80);
+    }
+
+    function openModal(modalId) {
+      lastFocusedElement = document.activeElement;
+
+      const modal = document.getElementById(modalId);
+      modal.classList.add("is-open");
+      document.body.style.overflow = "hidden";
+    }
+
+    function closeModal(modalId) {
+      const modal = document.getElementById(modalId);
+
+      if (!modal || !modal.classList.contains("is-open")) {
+        return;
+      }
+
+      modal.classList.remove("is-open");
+
+      if (scanTimer) {
+        window.clearTimeout(scanTimer);
+        scanTimer = null;
+      }
+
+      const anyOpen = document.querySelector(".modal-backdrop.is-open");
+
+      if (!anyOpen) {
+        document.body.style.overflow = "";
+      }
+
+      if (lastFocusedElement && typeof lastFocusedElement.focus === "function") {
+        lastFocusedElement.focus();
+      }
+    }
+
+    function closeTopModal() {
+      const openModals = Array.from(document.querySelectorAll(".modal-backdrop.is-open"));
+      const topModal = openModals.at(-1);
+
+      if (topModal) {
+        closeModal(topModal.id);
+      }
+    }
+
+    /* =========================================================
+       ВАЛИДАЦИЯ ПОЛЕЙ
+       ========================================================= */
+
+    function setFieldError(inputElement, errorElement, message) {
+      inputElement.classList.add("field__control--error");
+      inputElement.setAttribute("aria-invalid", "true");
+      errorElement.textContent = message;
+    }
+
+    function clearFieldError(inputElement, errorElement) {
+      inputElement.classList.remove("field__control--error");
+      inputElement.removeAttribute("aria-invalid");
+      errorElement.textContent = "";
+    }
+
+    /* =========================================================
+       РАСЧЁТ СРОКА ГОДНОСТИ
+       Здесь можно заменить текущую дату на серверную дату ЛИС
+       ========================================================= */
+
+    function calculateShelfLife(collectedAt, allowedHours) {
+      const collectedDate = new Date(collectedAt);
+      const expiresAt = new Date(collectedDate.getTime() + allowedHours * 60 * 60 * 1000);
+      const now = new Date();
+
+      return {
+        expiresAt: expiresAt.toISOString(),
+        isValid: now <= expiresAt
+      };
+    }
+
+    /* =========================================================
+       TOAST-УВЕДОМЛЕНИЯ
+       ========================================================= */
+
+    function showToast(title, text) {
+      const toast = document.createElement("div");
+      toast.className = "toast";
+      toast.setAttribute("role", "status");
+
+      toast.innerHTML = `
+        <div class="toast__icon" aria-hidden="true">i</div>
+        <div>
+          <div class="toast__title">${escapeHtml(title)}</div>
+          <div class="toast__text">${escapeHtml(text)}</div>
+        </div>
+      `;
+
+      elements.toastRegion.appendChild(toast);
+
+      window.setTimeout(() => {
+        toast.remove();
+      }, 4200);
+    }
+
+    /* =========================================================
+       ФОРМАТИРОВАНИЕ ДАННЫХ И УТИЛИТЫ
+       ========================================================= */
+
+    function formatDateTime(value) {
+      if (!value) return "—";
+
+      return new Intl.DateTimeFormat("ru-RU", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit"
+      }).format(new Date(value));
+    }
+
+    function formatDate(value) {
+      if (!value) return "—";
+
+      return new Intl.DateTimeFormat("ru-RU", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric"
+      }).format(new Date(value));
+    }
+
+    function formatTime(value) {
+      if (!value) return "—";
+
+      return new Intl.DateTimeFormat("ru-RU", {
+        hour: "2-digit",
+        minute: "2-digit"
+      }).format(new Date(value));
+    }
+
+    function minutesAgo(minutes) {
+      return new Date(Date.now() - minutes * 60 * 1000).toISOString();
+    }
+
+    function cryptoRandomId() {
+      if (window.crypto && crypto.randomUUID) {
+        return crypto.randomUUID();
+      }
+
+      return `id-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+  </script>
+</body>
+</html>
