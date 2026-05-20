@@ -1,0 +1,1966 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ЛИС — Очередь приёмки / Рабочее место приёмщика</title>
+  <style>
+    /* =========================================================
+       UI TOKENS / БАЗОВЫЕ НАСТРОЙКИ ДИЗАЙНА
+       Здесь можно менять цвета, радиусы, тени и общую типографику.
+       ========================================================= */
+    :root {
+      --accent: #ec6932;
+      --accent-dark: #c94f20;
+      --accent-soft: #fff0e9;
+      --bg: #f2f2f2;
+      --surface: #ffffff;
+      --surface-2: #fafafa;
+      --text: #000000;
+      --muted: #646464;
+      --muted-2: #8b8b8b;
+      --line: #e2e2e2;
+      --line-strong: #d5d5d5;
+      --success: #18794e;
+      --success-bg: #eaf7f0;
+      --warning: #9a5b00;
+      --warning-bg: #fff6df;
+      --danger: #b42318;
+      --danger-bg: #fff0ee;
+      --info: #185abc;
+      --info-bg: #edf4ff;
+      --shadow: 0 18px 45px rgba(0, 0, 0, 0.08);
+      --shadow-soft: 0 8px 26px rgba(0, 0, 0, 0.06);
+      --radius-lg: 24px;
+      --radius-md: 16px;
+      --radius-sm: 12px;
+      --max-width: 1280px;
+      --font: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      min-width: 360px;
+      background: var(--bg);
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: var(--font);
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(236, 105, 50, 0.14), transparent 34vw),
+        linear-gradient(180deg, #ffffff 0%, var(--bg) 42%);
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.62;
+    }
+
+    a {
+      color: inherit;
+    }
+
+    .app-shell {
+      max-width: var(--max-width);
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    /* =========================================================
+       HEADER / ВЕРХНЯЯ ПАНЕЛЬ
+       ========================================================= */
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 16px 18px;
+      margin-bottom: 22px;
+      background: rgba(255, 255, 255, 0.82);
+      border: 1px solid rgba(255, 255, 255, 0.8);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-soft);
+      backdrop-filter: blur(18px);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .brand-mark {
+      width: 44px;
+      height: 44px;
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+      border-radius: 15px;
+      color: #fff;
+      background: var(--accent);
+      box-shadow: 0 10px 24px rgba(236, 105, 50, 0.28);
+      font-weight: 900;
+      letter-spacing: -0.05em;
+    }
+
+    .brand-title {
+      margin: 0;
+      font-size: 17px;
+      line-height: 1.15;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-subtitle {
+      margin: 3px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .operator-panel {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+      flex-wrap: wrap;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .operator-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 36px;
+      padding: 8px 12px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #fff;
+      color: var(--text);
+      font-weight: 650;
+    }
+
+    .status-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 999px;
+      background: var(--success);
+      box-shadow: 0 0 0 4px rgba(24, 121, 78, 0.12);
+    }
+
+    /* =========================================================
+       LAYOUT / СЕТКА ЭКРАНА
+       ========================================================= */
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1.45fr) minmax(300px, 0.55fr);
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid rgba(0, 0, 0, 0.06);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-soft);
+    }
+
+    .scan-card {
+      position: relative;
+      overflow: hidden;
+      padding: 28px;
+      min-height: 260px;
+    }
+
+    .scan-card::after {
+      content: "";
+      position: absolute;
+      width: 340px;
+      height: 340px;
+      right: -150px;
+      top: -130px;
+      border-radius: 999px;
+      background: rgba(236, 105, 50, 0.12);
+      pointer-events: none;
+    }
+
+    .kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0 0 14px;
+      color: var(--accent-dark);
+      font-size: 13px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .kicker::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+
+    h1 {
+      position: relative;
+      margin: 0;
+      max-width: 720px;
+      font-size: clamp(28px, 4vw, 44px);
+      line-height: 0.98;
+      letter-spacing: -0.055em;
+      z-index: 1;
+    }
+
+    .lead {
+      position: relative;
+      max-width: 740px;
+      margin: 16px 0 24px;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.55;
+      z-index: 1;
+    }
+
+    .scan-actions {
+      position: relative;
+      display: grid;
+      grid-template-columns: minmax(230px, 320px) minmax(260px, 1fr);
+      gap: 12px;
+      align-items: start;
+      z-index: 1;
+    }
+
+    .primary-btn,
+    .secondary-btn,
+    .ghost-btn,
+    .danger-btn {
+      min-height: 48px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      border: 0;
+      border-radius: 15px;
+      padding: 12px 16px;
+      font-weight: 800;
+      transition: transform 0.16s ease, box-shadow 0.16s ease, background 0.16s ease, border-color 0.16s ease;
+    }
+
+    .primary-btn {
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 14px 26px rgba(236, 105, 50, 0.26);
+    }
+
+    .primary-btn:hover {
+      background: var(--accent-dark);
+      transform: translateY(-1px);
+      box-shadow: 0 16px 30px rgba(236, 105, 50, 0.32);
+    }
+
+    .secondary-btn {
+      background: #000;
+      color: #fff;
+      box-shadow: 0 12px 22px rgba(0, 0, 0, 0.16);
+    }
+
+    .secondary-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 15px 28px rgba(0, 0, 0, 0.2);
+    }
+
+    .ghost-btn {
+      min-height: 42px;
+      background: #fff;
+      color: var(--text);
+      border: 1px solid var(--line);
+      box-shadow: none;
+    }
+
+    .ghost-btn:hover {
+      border-color: var(--line-strong);
+      background: var(--surface-2);
+    }
+
+    .danger-btn {
+      background: var(--danger-bg);
+      color: var(--danger);
+    }
+
+    .danger-btn:hover {
+      background: #ffe1dd;
+    }
+
+    .field-group {
+      display: grid;
+      gap: 7px;
+    }
+
+    .field-label {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .input-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .input,
+    .select,
+    .textarea {
+      width: 100%;
+      min-height: 48px;
+      border: 1px solid var(--line-strong);
+      border-radius: 15px;
+      padding: 12px 14px;
+      background: #fff;
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+    }
+
+    .textarea {
+      resize: vertical;
+      min-height: 94px;
+      line-height: 1.45;
+    }
+
+    .input:focus,
+    .select:focus,
+    .textarea:focus,
+    button:focus-visible,
+    .filter-chip:focus-visible,
+    .table-row:focus-visible {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 4px rgba(236, 105, 50, 0.16);
+      outline: none;
+    }
+
+    .field-hint {
+      color: var(--muted-2);
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    /* =========================================================
+       COUNTERS / СЧЁТЧИКИ ЗА СМЕНУ
+       ========================================================= */
+    .metrics-card {
+      padding: 18px;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    .section-title {
+      margin: 0;
+      font-size: 18px;
+      line-height: 1.2;
+      letter-spacing: -0.025em;
+    }
+
+    .section-caption {
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .metric {
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      background: var(--surface-2);
+    }
+
+    .metric-value {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 28px;
+      line-height: 1;
+      font-weight: 900;
+      letter-spacing: -0.05em;
+    }
+
+    .metric-label {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.3;
+      font-weight: 700;
+    }
+
+    /* =========================================================
+       QUEUE / СПИСОК ПОСЛЕДНИХ ПРОБИРОК
+       ========================================================= */
+    .queue-card {
+      padding: 18px;
+    }
+
+    .toolbar {
+      display: grid;
+      grid-template-columns: minmax(230px, 1fr) 190px;
+      gap: 10px;
+      margin: 16px 0 14px;
+    }
+
+    .filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .filter-chip {
+      min-height: 38px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 8px 12px;
+      background: #fff;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 750;
+      transition: background 0.16s ease, color 0.16s ease, border-color 0.16s ease;
+    }
+
+    .filter-chip:hover,
+    .filter-chip.active {
+      color: var(--text);
+      border-color: rgba(236, 105, 50, 0.42);
+      background: var(--accent-soft);
+    }
+
+    .filter-count {
+      min-width: 22px;
+      min-height: 22px;
+      display: inline-grid;
+      place-items: center;
+      padding: 2px 6px;
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.06);
+      font-size: 12px;
+      color: var(--text);
+    }
+
+    .table-wrap {
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      background: #fff;
+    }
+
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .table th,
+    .table td {
+      padding: 14px 14px;
+      text-align: left;
+      border-bottom: 1px solid var(--line);
+      vertical-align: middle;
+      font-size: 14px;
+    }
+
+    .table th {
+      color: var(--muted);
+      background: #fafafa;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.055em;
+      font-weight: 850;
+      white-space: nowrap;
+    }
+
+    .table tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .table-row {
+      transition: background 0.14s ease;
+      outline: none;
+    }
+
+    .table-row:hover {
+      background: #fffaf7;
+    }
+
+    .barcode {
+      font-weight: 850;
+      letter-spacing: 0.015em;
+    }
+
+    .patient {
+      display: grid;
+      gap: 3px;
+    }
+
+    .patient-name {
+      font-weight: 800;
+    }
+
+    .patient-meta {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      min-height: 30px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 850;
+      white-space: nowrap;
+    }
+
+    .status-badge::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    .status-accepted {
+      color: var(--success);
+      background: var(--success-bg);
+    }
+
+    .status-warning {
+      color: var(--warning);
+      background: var(--warning-bg);
+    }
+
+    .status-rejected {
+      color: var(--danger);
+      background: var(--danger-bg);
+    }
+
+    .status-notfound {
+      color: var(--info);
+      background: var(--info-bg);
+    }
+
+    .empty-state {
+      display: none;
+      padding: 38px 18px;
+      text-align: center;
+      color: var(--muted);
+      border: 1px dashed var(--line-strong);
+      border-radius: var(--radius-md);
+      background: #fff;
+    }
+
+    .empty-state.visible {
+      display: block;
+    }
+
+    .empty-icon {
+      width: 48px;
+      height: 48px;
+      display: grid;
+      place-items: center;
+      margin: 0 auto 10px;
+      border-radius: 16px;
+      color: var(--accent);
+      background: var(--accent-soft);
+      font-size: 24px;
+    }
+
+    /* =========================================================
+       MODALS / МОДАЛЬНЫЕ ОКНА
+       ========================================================= */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 22px;
+      background: rgba(0, 0, 0, 0.48);
+      z-index: 1000;
+    }
+
+    .modal-backdrop.open {
+      display: flex;
+    }
+
+    .modal {
+      width: min(720px, 100%);
+      max-height: min(86vh, 860px);
+      overflow: auto;
+      background: #fff;
+      border-radius: 28px;
+      box-shadow: var(--shadow);
+      animation: modalIn 0.18s ease-out;
+    }
+
+    .modal.large {
+      width: min(980px, 100%);
+    }
+
+    @keyframes modalIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px) scale(0.98);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .modal-header {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 22px 22px 16px;
+      background: rgba(255, 255, 255, 0.96);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(14px);
+    }
+
+    .modal-title {
+      margin: 0;
+      font-size: 23px;
+      line-height: 1.1;
+      letter-spacing: -0.04em;
+    }
+
+    .modal-subtitle {
+      margin: 7px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.42;
+    }
+
+    .icon-btn {
+      width: 40px;
+      height: 40px;
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      background: #fff;
+      color: var(--text);
+      font-size: 22px;
+      line-height: 1;
+    }
+
+    .icon-btn:hover {
+      background: var(--surface-2);
+    }
+
+    .modal-body {
+      padding: 22px;
+    }
+
+    .modal-footer {
+      position: sticky;
+      bottom: 0;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+      padding: 16px 22px 22px;
+      background: rgba(255, 255, 255, 0.96);
+      border-top: 1px solid var(--line);
+      backdrop-filter: blur(14px);
+    }
+
+    .scan-state {
+      margin-top: 16px;
+      padding: 16px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--line);
+      background: var(--surface-2);
+    }
+
+    .state-content {
+      display: none;
+      align-items: flex-start;
+      gap: 12px;
+      min-height: 48px;
+    }
+
+    .state-content.active {
+      display: flex;
+    }
+
+    .spinner {
+      width: 24px;
+      height: 24px;
+      flex: 0 0 auto;
+      border: 3px solid rgba(236, 105, 50, 0.22);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .state-icon {
+      width: 28px;
+      height: 28px;
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+      border-radius: 50%;
+      font-weight: 900;
+    }
+
+    .state-icon.success {
+      color: var(--success);
+      background: var(--success-bg);
+    }
+
+    .state-icon.error {
+      color: var(--danger);
+      background: var(--danger-bg);
+    }
+
+    .state-text {
+      display: grid;
+      gap: 3px;
+    }
+
+    .state-title {
+      font-weight: 850;
+    }
+
+    .state-desc {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    /* =========================================================
+       TUBE CHECK CARD / КАРТОЧКА ПРОВЕРКИ ПРОБИРКИ
+       ========================================================= */
+    .tube-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 300px;
+      gap: 16px;
+    }
+
+    .details-panel,
+    .decision-panel {
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      background: var(--surface-2);
+      padding: 16px;
+    }
+
+    .details-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .detail-item {
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fff;
+    }
+
+    .detail-label {
+      display: block;
+      margin-bottom: 5px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 750;
+    }
+
+    .detail-value {
+      display: block;
+      font-size: 14px;
+      line-height: 1.35;
+      font-weight: 820;
+    }
+
+    .validity-card {
+      margin-top: 12px;
+      padding: 14px;
+      border-radius: 15px;
+      border: 1px solid var(--line);
+      background: #fff;
+    }
+
+    .validity-card.valid {
+      border-color: rgba(24, 121, 78, 0.25);
+      background: var(--success-bg);
+    }
+
+    .validity-card.invalid {
+      border-color: rgba(180, 35, 24, 0.22);
+      background: var(--danger-bg);
+    }
+
+    .validity-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 6px;
+      font-weight: 900;
+    }
+
+    .validity-desc {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.42;
+    }
+
+    .checklist {
+      display: grid;
+      gap: 10px;
+      margin: 14px 0;
+    }
+
+    .check-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 11px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fff;
+      font-size: 13px;
+      line-height: 1.38;
+      font-weight: 720;
+    }
+
+    .check-item input {
+      width: 18px;
+      height: 18px;
+      margin-top: 0;
+      accent-color: var(--accent);
+      flex: 0 0 auto;
+    }
+
+    .radio-stack {
+      display: grid;
+      gap: 8px;
+      margin: 12px 0 14px;
+    }
+
+    .radio-option {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fff;
+      cursor: pointer;
+    }
+
+    .radio-option:has(input:checked) {
+      border-color: rgba(236, 105, 50, 0.52);
+      background: var(--accent-soft);
+    }
+
+    .radio-option input {
+      margin-top: 2px;
+      accent-color: var(--accent);
+    }
+
+    .radio-title {
+      display: block;
+      font-weight: 850;
+      font-size: 13px;
+    }
+
+    .radio-caption {
+      display: block;
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .form-error {
+      display: none;
+      margin-top: 10px;
+      color: var(--danger);
+      font-size: 13px;
+      font-weight: 750;
+    }
+
+    .form-error.visible {
+      display: block;
+    }
+
+    .toast {
+      position: fixed;
+      right: 24px;
+      bottom: 24px;
+      z-index: 1200;
+      display: none;
+      max-width: min(420px, calc(100vw - 48px));
+      padding: 14px 16px;
+      border-radius: 16px;
+      background: #000;
+      color: #fff;
+      box-shadow: var(--shadow);
+      font-size: 14px;
+      line-height: 1.4;
+      font-weight: 750;
+    }
+
+    .toast.visible {
+      display: block;
+      animation: modalIn 0.18s ease-out;
+    }
+
+    /* =========================================================
+       RESPONSIVE / ПРОСТАЯ АДАПТАЦИЯ
+       ========================================================= */
+    @media (max-width: 980px) {
+      .hero,
+      .tube-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .scan-actions {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .app-shell {
+        padding: 14px;
+      }
+
+      .topbar {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .operator-panel {
+        justify-content: flex-start;
+      }
+
+      .scan-card,
+      .metrics-card,
+      .queue-card {
+        padding: 16px;
+      }
+
+      .metrics-grid,
+      .details-list,
+      .toolbar {
+        grid-template-columns: 1fr;
+      }
+
+      .table-wrap {
+        overflow-x: auto;
+      }
+
+      .table {
+        min-width: 780px;
+      }
+
+      .modal-backdrop {
+        padding: 10px;
+      }
+
+      .modal {
+        border-radius: 22px;
+      }
+
+      .modal-footer {
+        flex-direction: column-reverse;
+        align-items: stretch;
+      }
+
+      .modal-footer button,
+      .modal-footer a {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- =========================================================
+       APP SHELL / ОСНОВНАЯ ОБЁРТКА ЭКРАНА
+       ========================================================= -->
+  <main class="app-shell">
+    <!-- Верхняя панель -->
+    <header class="topbar" aria-label="Верхняя панель рабочего места приёмщика">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">ЛИС</div>
+        <div>
+          <p class="brand-title">Очередь приёмки</p>
+          <p class="brand-subtitle">Рабочее место приёмщика · Биоматериалы по почте</p>
+        </div>
+      </div>
+      <div class="operator-panel">
+        <span class="operator-badge"><span class="status-dot" aria-hidden="true"></span>Смена активна</span>
+        <span class="operator-badge">Приёмщик: Смирнова А.А.</span>
+        <span class="operator-badge" id="currentDateTime">—</span>
+      </div>
+    </header>
+
+    <!-- Первый экран: CTA сканирования + счётчики -->
+    <section class="hero">
+      <article class="card scan-card" aria-labelledby="pageTitle">
+        <p class="kicker">Старт приёмки</p>
+        <h1 id="pageTitle">Сканируйте пробирку или введите штрихкод вручную</h1>
+        <p class="lead">
+          Система найдёт заказ в ЛИС, проверит дату забора и допустимый интервал хранения для типа биоматериала.
+          После успешного поиска откроется карточка проверки пробирки.
+        </p>
+
+        <div class="scan-actions">
+          <button class="primary-btn" id="openScanModalBtn" type="button" aria-haspopup="dialog">
+            <span aria-hidden="true">▣</span>
+            Сканировать пробирку
+          </button>
+
+          <form class="field-group" id="manualBarcodeForm" novalidate>
+            <label class="field-label" for="manualBarcodeInput">Ручной ввод штрихкода</label>
+            <div class="input-row">
+              <input
+                class="input"
+                id="manualBarcodeInput"
+                name="barcode"
+                type="text"
+                inputmode="text"
+                autocomplete="off"
+                placeholder="Например: BIO-2026-0007"
+                aria-describedby="manualHint"
+              />
+              <button class="secondary-btn" type="submit">Найти</button>
+            </div>
+            <div class="field-hint" id="manualHint">Enter — поиск заказа. Esc — закрыть модальное окно, если оно открыто.</div>
+          </form>
+        </div>
+      </article>
+
+      <aside class="card metrics-card" aria-labelledby="metricsTitle">
+        <div class="section-head">
+          <div>
+            <h2 class="section-title" id="metricsTitle">Счётчики за смену</h2>
+            <p class="section-caption">Обновляются после принятия решения по пробирке.</p>
+          </div>
+        </div>
+        <div class="metrics-grid" id="metricsGrid"></div>
+      </aside>
+    </section>
+
+    <!-- Список последних просканированных пробирок -->
+    <section class="card queue-card" aria-labelledby="queueTitle">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title" id="queueTitle">Последние просканированные пробирки</h2>
+          <p class="section-caption">Фильтруйте список по статусу, ищите по ФИО, штрихкоду или типу биоматериала.</p>
+        </div>
+        <button class="ghost-btn" id="resetListBtn" type="button">Сбросить фильтры</button>
+      </div>
+
+      <div class="toolbar">
+        <div class="field-group">
+          <label class="field-label" for="queueSearchInput">Поиск</label>
+          <input class="input" id="queueSearchInput" type="search" placeholder="ФИО, штрихкод, анализ, биоматериал" />
+        </div>
+        <div class="field-group">
+          <label class="field-label" for="queueSortSelect">Сортировка</label>
+          <select class="select" id="queueSortSelect">
+            <option value="timeDesc">Сначала новые</option>
+            <option value="timeAsc">Сначала старые</option>
+            <option value="barcodeAsc">Штрихкод А→Я</option>
+            <option value="statusAsc">Статус А→Я</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="filters" id="statusFilters" aria-label="Фильтры по статусам"></div>
+
+      <div class="table-wrap" id="queueTableWrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Время</th>
+              <th>Штрихкод</th>
+              <th>Пациент</th>
+              <th>Биоматериал</th>
+              <th>Анализ</th>
+              <th>Статус</th>
+              <th>Действие</th>
+            </tr>
+          </thead>
+          <tbody id="queueTableBody"></tbody>
+        </table>
+      </div>
+
+      <div class="empty-state" id="emptyState" role="status">
+        <div class="empty-icon" aria-hidden="true">⌕</div>
+        <strong>Ничего не найдено</strong>
+        <p>Измените фильтр, поисковый запрос или сбросьте настройки списка.</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- =========================================================
+       MODAL: ОЖИДАНИЕ СКАНИРОВАНИЯ / ПОИСК ЗАКАЗА
+       ========================================================= -->
+  <div class="modal-backdrop" id="scanModal" role="dialog" aria-modal="true" aria-labelledby="scanModalTitle">
+    <div class="modal">
+      <div class="modal-header">
+        <div>
+          <h2 class="modal-title" id="scanModalTitle">Сканирование пробирки</h2>
+          <p class="modal-subtitle">Поднесите пробирку к сканеру или введите штрихкод вручную.</p>
+        </div>
+        <button class="icon-btn" id="closeScanModalBtn" type="button" aria-label="Закрыть окно сканирования">×</button>
+      </div>
+
+      <div class="modal-body">
+        <form id="scanForm" class="field-group" novalidate>
+          <label class="field-label" for="scanBarcodeInput">Поле штрихкода</label>
+          <div class="input-row">
+            <input
+              class="input"
+              id="scanBarcodeInput"
+              name="barcode"
+              type="text"
+              autocomplete="off"
+              placeholder="Сканер заполнит поле автоматически"
+            />
+            <button class="primary-btn" type="submit">Проверить</button>
+          </div>
+          <div class="field-hint">Демо-штрихкоды: BIO-2026-0007, BIO-2026-0012, BIO-2026-0015. Для ошибки: любой другой код.</div>
+        </form>
+
+        <div class="scan-state" aria-live="polite">
+          <div class="state-content active" data-scan-state="idle">
+            <div class="state-icon success" aria-hidden="true">⌁</div>
+            <div class="state-text">
+              <span class="state-title">Ожидание сканирования</span>
+              <span class="state-desc">Введите код и нажмите «Проверить» или используйте физический сканер.</span>
+            </div>
+          </div>
+
+          <div class="state-content" data-scan-state="loading">
+            <div class="spinner" aria-hidden="true"></div>
+            <div class="state-text">
+              <span class="state-title">Идёт поиск заказа…</span>
+              <span class="state-desc">Система ищет штрихкод в ЛИС и проверяет доступные данные заказа.</span>
+            </div>
+          </div>
+
+          <div class="state-content" data-scan-state="success">
+            <div class="state-icon success" aria-hidden="true">✓</div>
+            <div class="state-text">
+              <span class="state-title">Заказ найден</span>
+              <span class="state-desc">Открываем карточку проверки пробирки.</span>
+            </div>
+          </div>
+
+          <div class="state-content" data-scan-state="error">
+            <div class="state-icon error" aria-hidden="true">!</div>
+            <div class="state-text">
+              <span class="state-title">Штрихкод не найден в ЛИС</span>
+              <span class="state-desc">Проверьте корректность штрихкода или передайте отправление на разбор ошибки идентификации.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="ghost-btn" id="demoFillBarcodeBtn" type="button">Подставить демо-код</button>
+        <button class="ghost-btn" id="clearScanBtn" type="button">Очистить</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       MODAL: КАРТОЧКА ПРОВЕРКИ ПРОБИРКИ
+       По требованию это модальное окно. Позже можно заменить на отдельный HTML-экран.
+       TODO: связать с отдельным файлом, например tube-check.html?barcode={barcode}
+       ========================================================= -->
+  <div class="modal-backdrop" id="tubeModal" role="dialog" aria-modal="true" aria-labelledby="tubeModalTitle">
+    <div class="modal large">
+      <div class="modal-header">
+        <div>
+          <h2 class="modal-title" id="tubeModalTitle">Карточка проверки пробирки</h2>
+          <p class="modal-subtitle" id="tubeModalSubtitle">Проверьте данные заказа и примите решение по биоматериалу.</p>
+        </div>
+        <button class="icon-btn" id="closeTubeModalBtn" type="button" aria-label="Закрыть карточку проверки">×</button>
+      </div>
+
+      <form id="tubeCheckForm" novalidate>
+        <div class="modal-body">
+          <div class="tube-grid">
+            <section class="details-panel" aria-labelledby="orderDataTitle">
+              <div class="section-head">
+                <div>
+                  <h3 class="section-title" id="orderDataTitle">Данные найденного заказа</h3>
+                  <p class="section-caption">Проверьте ФИО на экране с этикеткой пробирки.</p>
+                </div>
+                <span class="status-badge status-notfound" id="currentTubeStatus">Новая проверка</span>
+              </div>
+
+              <div class="details-list" id="tubeDetailsList"></div>
+
+              <div class="validity-card" id="validityCard">
+                <div class="validity-title">
+                  <span id="validityTitle">Проверка срока годности</span>
+                  <span id="validityTag">—</span>
+                </div>
+                <div class="validity-desc" id="validityDesc">—</div>
+              </div>
+            </section>
+
+            <aside class="decision-panel" aria-labelledby="decisionTitle">
+              <h3 class="section-title" id="decisionTitle">Решение приёмщика</h3>
+              <p class="section-caption">Обязательные проверки нужны для статуса «Принят».</p>
+
+              <div class="checklist">
+                <label class="check-item">
+                  <input type="checkbox" id="fioMatchCheckbox" />
+                  <span>ФИО на экране совпадает с этикеткой пробирки</span>
+                </label>
+                <label class="check-item">
+                  <input type="checkbox" id="volumeOkCheckbox" />
+                  <span>Объём биоматериала соответствует норме</span>
+                </label>
+                <label class="check-item">
+                  <input type="checkbox" id="packageOkCheckbox" />
+                  <span>Упаковка не повреждена, утечек нет</span>
+                </label>
+              </div>
+
+              <div class="field-group">
+                <span class="field-label">Статус приёмки</span>
+                <div class="radio-stack">
+                  <label class="radio-option">
+                    <input type="radio" name="decision" value="accepted" checked />
+                    <span>
+                      <span class="radio-title">Принят</span>
+                      <span class="radio-caption">Все проверки пройдены, биоматериал можно маршрутизировать дальше.</span>
+                    </span>
+                  </label>
+                  <label class="radio-option">
+                    <input type="radio" name="decision" value="warning" />
+                    <span>
+                      <span class="radio-title">Принят с замечаниями</span>
+                      <span class="radio-caption">Есть некритичные замечания, требуется комментарий.</span>
+                    </span>
+                  </label>
+                  <label class="radio-option">
+                    <input type="radio" name="decision" value="rejected" />
+                    <span>
+                      <span class="radio-title">Отклонён</span>
+                      <span class="radio-caption">Материал нельзя принять в работу, требуется причина.</span>
+                    </span>
+                  </label>
+                </div>
+              </div>
+
+              <div class="field-group">
+                <label class="field-label" for="decisionComment">Комментарий</label>
+                <textarea class="textarea" id="decisionComment" placeholder="Например: недостаточный объём, повреждена упаковка, истёк срок хранения"></textarea>
+              </div>
+
+              <div class="form-error" id="tubeFormError" role="alert"></div>
+            </aside>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="ghost-btn" type="button" id="cancelTubeCheckBtn">Вернуться к очереди</button>
+          <!-- TODO: при переходе на отдельный экран заменить href на реальный файл проверки пробирки. -->
+          <a class="ghost-btn" id="openTubeScreenLink" href="tube-check.html" title="Заглушка для будущей связи между HTML-файлами">Открыть как экран</a>
+          <button class="primary-btn" type="submit">Сохранить решение</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    /* =========================================================
+       MOCK DATA / ДЕМО-ДАННЫЕ
+       Здесь менять тестовые заказы, типы биоматериала, сроки хранения и историю сканирований.
+       ========================================================= */
+    const mockOrders = [
+      {
+        barcode: "BIO-2026-0007",
+        orderId: "ORD-884120",
+        patientName: "Иванова Мария Петровна",
+        patientBirthDate: "1989-04-18",
+        materialType: "Кровь",
+        analysisType: "Общий анализ крови",
+        collectedAt: "2026-05-10T09:20:00",
+        allowedHours: 48,
+        volumeNorm: "4–6 мл",
+        kitId: "KIT-BC-7721"
+      },
+      {
+        barcode: "BIO-2026-0012",
+        orderId: "ORD-884138",
+        patientName: "Соколов Андрей Викторович",
+        patientBirthDate: "1977-11-02",
+        materialType: "Слюна",
+        analysisType: "Генетический тест",
+        collectedAt: "2026-05-08T15:45:00",
+        allowedHours: 120,
+        volumeNorm: "2 мл",
+        kitId: "KIT-SL-9184"
+      },
+      {
+        barcode: "BIO-2026-0015",
+        orderId: "ORD-884151",
+        patientName: "Никитина Ольга Сергеевна",
+        patientBirthDate: "1994-06-27",
+        materialType: "Мазок",
+        analysisType: "ПЦР-панель",
+        collectedAt: "2026-05-05T08:10:00",
+        allowedHours: 72,
+        volumeNorm: "1 пробирка",
+        kitId: "KIT-PCR-4510"
+      }
+    ];
+
+    let scannedTubes = [
+      {
+        id: crypto.randomUUID(),
+        barcode: "BIO-2026-0002",
+        scannedAt: "2026-05-11T08:34:00",
+        patientName: "Кузнецова Анна Игоревна",
+        materialType: "Кровь",
+        analysisType: "Биохимия крови",
+        status: "accepted",
+        comment: ""
+      },
+      {
+        id: crypto.randomUUID(),
+        barcode: "BIO-2026-0003",
+        scannedAt: "2026-05-11T08:51:00",
+        patientName: "Мельников Павел Олегович",
+        materialType: "Слюна",
+        analysisType: "Генетический тест",
+        status: "warning",
+        comment: "Этикетка частично повреждена, штрихкод читается."
+      },
+      {
+        id: crypto.randomUUID(),
+        barcode: "BIO-2026-0004",
+        scannedAt: "2026-05-11T09:13:00",
+        patientName: "Громова Елена Андреевна",
+        materialType: "Мазок",
+        analysisType: "ПЦР-панель",
+        status: "rejected",
+        comment: "Истёк допустимый интервал хранения."
+      },
+      {
+        id: crypto.randomUUID(),
+        barcode: "BIO-2026-4040",
+        scannedAt: "2026-05-11T09:27:00",
+        patientName: "—",
+        materialType: "—",
+        analysisType: "—",
+        status: "notfound",
+        comment: "Штрихкод не найден в ЛИС."
+      }
+    ];
+
+    /* =========================================================
+       TEXTS / СЛОВАРИ ТЕКСТОВ И СТАТУСОВ
+       Здесь менять названия статусов, подписей и счётчиков.
+       ========================================================= */
+    const statusConfig = {
+      all: { label: "Все", metricLabel: "Всего", className: "" },
+      accepted: { label: "Принят", metricLabel: "Принято", className: "status-accepted" },
+      warning: { label: "Принят с замечаниями", metricLabel: "С замечаниями", className: "status-warning" },
+      rejected: { label: "Отклонён", metricLabel: "Отклонено", className: "status-rejected" },
+      notfound: { label: "Ошибка идентификации", metricLabel: "Не найдено", className: "status-notfound" }
+    };
+
+    const metricOrder = ["accepted", "rejected", "warning", "notfound"];
+    const filterOrder = ["all", "accepted", "warning", "rejected", "notfound"];
+
+    /* =========================================================
+       STATE / СОСТОЯНИЕ ЭКРАНА
+       ========================================================= */
+    let activeFilter = "all";
+    let activeTube = null;
+    let lastFocusedElement = null;
+
+    /* =========================================================
+       DOM ELEMENTS / DOM-ЭЛЕМЕНТЫ
+       ========================================================= */
+    const currentDateTime = document.getElementById("currentDateTime");
+    const metricsGrid = document.getElementById("metricsGrid");
+    const statusFilters = document.getElementById("statusFilters");
+    const queueTableBody = document.getElementById("queueTableBody");
+    const queueTableWrap = document.getElementById("queueTableWrap");
+    const emptyState = document.getElementById("emptyState");
+    const queueSearchInput = document.getElementById("queueSearchInput");
+    const queueSortSelect = document.getElementById("queueSortSelect");
+    const resetListBtn = document.getElementById("resetListBtn");
+    const manualBarcodeForm = document.getElementById("manualBarcodeForm");
+    const manualBarcodeInput = document.getElementById("manualBarcodeInput");
+
+    const scanModal = document.getElementById("scanModal");
+    const openScanModalBtn = document.getElementById("openScanModalBtn");
+    const closeScanModalBtn = document.getElementById("closeScanModalBtn");
+    const scanForm = document.getElementById("scanForm");
+    const scanBarcodeInput = document.getElementById("scanBarcodeInput");
+    const demoFillBarcodeBtn = document.getElementById("demoFillBarcodeBtn");
+    const clearScanBtn = document.getElementById("clearScanBtn");
+
+    const tubeModal = document.getElementById("tubeModal");
+    const closeTubeModalBtn = document.getElementById("closeTubeModalBtn");
+    const cancelTubeCheckBtn = document.getElementById("cancelTubeCheckBtn");
+    const tubeCheckForm = document.getElementById("tubeCheckForm");
+    const tubeModalSubtitle = document.getElementById("tubeModalSubtitle");
+    const tubeDetailsList = document.getElementById("tubeDetailsList");
+    const validityCard = document.getElementById("validityCard");
+    const validityTitle = document.getElementById("validityTitle");
+    const validityTag = document.getElementById("validityTag");
+    const validityDesc = document.getElementById("validityDesc");
+    const currentTubeStatus = document.getElementById("currentTubeStatus");
+    const openTubeScreenLink = document.getElementById("openTubeScreenLink");
+    const tubeFormError = document.getElementById("tubeFormError");
+    const fioMatchCheckbox = document.getElementById("fioMatchCheckbox");
+    const volumeOkCheckbox = document.getElementById("volumeOkCheckbox");
+    const packageOkCheckbox = document.getElementById("packageOkCheckbox");
+    const decisionComment = document.getElementById("decisionComment");
+    const toast = document.getElementById("toast");
+
+    /* =========================================================
+       INIT / ИНИЦИАЛИЗАЦИЯ ЭКРАНА
+       ========================================================= */
+    document.addEventListener("DOMContentLoaded", () => {
+      updateDateTime();
+      setInterval(updateDateTime, 30_000);
+      renderMetrics();
+      renderFilters();
+      renderQueue();
+      bindEvents();
+    });
+
+    /* =========================================================
+       EVENTS / ОБРАБОТЧИКИ СОБЫТИЙ
+       ========================================================= */
+    function bindEvents() {
+      openScanModalBtn.addEventListener("click", () => openModal(scanModal, scanBarcodeInput));
+      closeScanModalBtn.addEventListener("click", () => closeModal(scanModal));
+      clearScanBtn.addEventListener("click", resetScanModal);
+      demoFillBarcodeBtn.addEventListener("click", () => {
+        scanBarcodeInput.value = "BIO-2026-0007";
+        scanBarcodeInput.focus();
+      });
+
+      scanForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+        processBarcode(scanBarcodeInput.value, "scan");
+      });
+
+      manualBarcodeForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+        processBarcode(manualBarcodeInput.value, "manual");
+      });
+
+      queueSearchInput.addEventListener("input", renderQueue);
+      queueSortSelect.addEventListener("change", renderQueue);
+      resetListBtn.addEventListener("click", () => {
+        activeFilter = "all";
+        queueSearchInput.value = "";
+        queueSortSelect.value = "timeDesc";
+        renderFilters();
+        renderQueue();
+      });
+
+      closeTubeModalBtn.addEventListener("click", () => closeModal(tubeModal));
+      cancelTubeCheckBtn.addEventListener("click", () => closeModal(tubeModal));
+
+      tubeCheckForm.addEventListener("submit", (event) => {
+        event.preventDefault();
+        saveTubeDecision();
+      });
+
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") {
+          if (tubeModal.classList.contains("open")) closeModal(tubeModal);
+          else if (scanModal.classList.contains("open")) closeModal(scanModal);
+        }
+      });
+
+      [scanModal, tubeModal].forEach((modal) => {
+        modal.addEventListener("mousedown", (event) => {
+          if (event.target === modal) closeModal(modal);
+        });
+      });
+    }
+
+    /* =========================================================
+       SCAN LOGIC / ЛОГИКА СКАНИРОВАНИЯ И ПОИСКА ЗАКАЗА
+       Здесь менять правила поиска, перехода и обработки ошибок.
+       ========================================================= */
+    function processBarcode(rawBarcode, source) {
+      const barcode = normalizeBarcode(rawBarcode);
+
+      if (!barcode) {
+        showToast("Введите или отсканируйте штрихкод пробирки.");
+        if (source === "scan") scanBarcodeInput.focus();
+        else manualBarcodeInput.focus();
+        return;
+      }
+
+      if (source === "manual") {
+        openModal(scanModal, scanBarcodeInput);
+        scanBarcodeInput.value = barcode;
+      }
+
+      setScanState("loading");
+      disableScanControls(true);
+
+      window.setTimeout(() => {
+        const order = mockOrders.find((item) => item.barcode.toLowerCase() === barcode.toLowerCase());
+        disableScanControls(false);
+
+        if (!order) {
+          setScanState("error");
+          addNotFoundScan(barcode);
+          renderAll();
+          return;
+        }
+
+        setScanState("success");
+
+        window.setTimeout(() => {
+          closeModal(scanModal, false);
+          openTubeCheck(order);
+        }, 650);
+      }, 850);
+    }
+
+    function normalizeBarcode(value) {
+      return String(value || "").trim().replace(/\s+/g, "").toUpperCase();
+    }
+
+    function addNotFoundScan(barcode) {
+      scannedTubes.unshift({
+        id: crypto.randomUUID(),
+        barcode,
+        scannedAt: new Date().toISOString(),
+        patientName: "—",
+        materialType: "—",
+        analysisType: "—",
+        status: "notfound",
+        comment: "Штрихкод не найден в ЛИС."
+      });
+      showToast("Штрихкод не найден в ЛИС. Запись добавлена в ошибки идентификации.");
+    }
+
+    function setScanState(state) {
+      document.querySelectorAll("[data-scan-state]").forEach((element) => {
+        element.classList.toggle("active", element.dataset.scanState === state);
+      });
+    }
+
+    function disableScanControls(isDisabled) {
+      scanBarcodeInput.disabled = isDisabled;
+      scanForm.querySelector("button[type='submit']").disabled = isDisabled;
+      demoFillBarcodeBtn.disabled = isDisabled;
+      clearScanBtn.disabled = isDisabled;
+    }
+
+    function resetScanModal() {
+      scanBarcodeInput.value = "";
+      setScanState("idle");
+      disableScanControls(false);
+      scanBarcodeInput.focus();
+    }
+
+    /* =========================================================
+       TUBE CHECK LOGIC / ЛОГИКА КАРТОЧКИ ПРОВЕРКИ ПРОБИРКИ
+       Здесь менять поля карточки, валидацию и бизнес-правила принятия решения.
+       ========================================================= */
+    function openTubeCheck(order) {
+      activeTube = {
+        ...order,
+        id: crypto.randomUUID(),
+        scannedAt: new Date().toISOString()
+      };
+
+      tubeCheckForm.reset();
+      document.querySelector("input[name='decision'][value='accepted']").checked = true;
+      tubeFormError.classList.remove("visible");
+      tubeFormError.textContent = "";
+
+      const validity = calculateValidity(order);
+      const ageText = formatDurationHours(validity.ageHours);
+      const deadlineText = formatDateTime(validity.deadline);
+
+      tubeModalSubtitle.textContent = `Заказ ${order.orderId} · штрихкод ${order.barcode}`;
+      currentTubeStatus.textContent = "Новая проверка";
+      currentTubeStatus.className = "status-badge status-notfound";
+      openTubeScreenLink.href = `tube-check.html?barcode=${encodeURIComponent(order.barcode)}`;
+
+      tubeDetailsList.innerHTML = createDetailsMarkup([
+        ["Штрихкод", order.barcode],
+        ["Номер заказа", order.orderId],
+        ["ФИО пациента", order.patientName],
+        ["Дата рождения", formatDate(order.patientBirthDate)],
+        ["Тип биоматериала", order.materialType],
+        ["Тип анализа", order.analysisType],
+        ["Дата забора", formatDateTime(order.collectedAt)],
+        ["Норма объёма", order.volumeNorm],
+        ["ID кита", order.kitId],
+        ["Допустимый интервал", `${order.allowedHours} ч.`]
+      ]);
+
+      validityCard.classList.toggle("valid", validity.isValid);
+      validityCard.classList.toggle("invalid", !validity.isValid);
+      validityTitle.textContent = validity.isValid ? "Срок годности не истёк" : "Срок годности истёк";
+      validityTag.textContent = validity.isValid ? "Можно принять" : "Требует отклонения";
+      validityDesc.textContent = `С момента забора прошло ${ageText}. Дедлайн хранения: ${deadlineText}. Допустимый интервал для типа «${order.materialType}»: ${order.allowedHours} ч.`;
+
+      if (!validity.isValid) {
+        document.querySelector("input[name='decision'][value='rejected']").checked = true;
+        decisionComment.value = "Истёк допустимый интервал хранения биоматериала.";
+      }
+
+      openModal(tubeModal, fioMatchCheckbox);
+    }
+
+    function saveTubeDecision() {
+      if (!activeTube) return;
+
+      const decision = new FormData(tubeCheckForm).get("decision");
+      const comment = decisionComment.value.trim();
+      const validity = calculateValidity(activeTube);
+      const checks = {
+        fio: fioMatchCheckbox.checked,
+        volume: volumeOkCheckbox.checked,
+        package: packageOkCheckbox.checked
+      };
+
+      const validationMessage = validateTubeDecision(decision, comment, checks, validity);
+      if (validationMessage) {
+        tubeFormError.textContent = validationMessage;
+        tubeFormError.classList.add("visible");
+        return;
+      }
+
+      const existingIndex = scannedTubes.findIndex((tube) => tube.barcode === activeTube.barcode);
+      const row = {
+        id: activeTube.id,
+        barcode: activeTube.barcode,
+        scannedAt: activeTube.scannedAt,
+        patientName: activeTube.patientName,
+        materialType: activeTube.materialType,
+        analysisType: activeTube.analysisType,
+        status: decision,
+        comment
+      };
+
+      if (existingIndex >= 0) scannedTubes.splice(existingIndex, 1, row);
+      else scannedTubes.unshift(row);
+
+      renderAll();
+      closeModal(tubeModal);
+      showToast(`Решение сохранено: ${statusConfig[decision].label}.`);
+    }
+
+    function validateTubeDecision(decision, comment, checks, validity) {
+      if (decision === "accepted") {
+        if (!validity.isValid) return "Нельзя принять пробирку: срок годности биоматериала истёк.";
+        if (!checks.fio || !checks.volume || !checks.package) {
+          return "Для статуса «Принят» подтвердите совпадение ФИО, норму объёма и целостность упаковки.";
+        }
+      }
+
+      if ((decision === "warning" || decision === "rejected") && comment.length < 5) {
+        return "Для статуса «Принят с замечаниями» или «Отклонён» укажите комментарий минимум 5 символов.";
+      }
+
+      return "";
+    }
+
+    function calculateValidity(order) {
+      const collectedAt = new Date(order.collectedAt);
+      const now = new Date();
+      const deadline = new Date(collectedAt.getTime() + order.allowedHours * 60 * 60 * 1000);
+      const ageHours = Math.max(0, Math.round((now.getTime() - collectedAt.getTime()) / (60 * 60 * 1000)));
+      return {
+        deadline,
+        ageHours,
+        isValid: now.getTime() <= deadline.getTime()
+      };
+    }
+
+    function createDetailsMarkup(items) {
+      return items.map(([label, value]) => `
+        <div class="detail-item">
+          <span class="detail-label">${escapeHtml(label)}</span>
+          <span class="detail-value">${escapeHtml(value)}</span>
+        </div>
+      `).join("");
+    }
+
+    /* =========================================================
+       RENDER / ОТРИСОВКА СПИСКА, ФИЛЬТРОВ И СЧЁТЧИКОВ
+       ========================================================= */
+    function renderAll() {
+      renderMetrics();
+      renderFilters();
+      renderQueue();
+    }
+
+    function renderMetrics() {
+      const counts = getCounts();
+      metricsGrid.innerHTML = metricOrder.map((status) => `
+        <div class="metric">
+          <span class="metric-value">${counts[status] || 0}</span>
+          <span class="metric-label">${statusConfig[status].metricLabel}</span>
+        </div>
+      `).join("");
+    }
+
+    function renderFilters() {
+      const counts = getCounts();
+      const total = scannedTubes.length;
+
+      statusFilters.innerHTML = filterOrder.map((status) => {
+        const count = status === "all" ? total : (counts[status] || 0);
+        return `
+          <button
+            class="filter-chip ${activeFilter === status ? "active" : ""}"
+            type="button"
+            data-filter="${status}"
+            aria-pressed="${activeFilter === status}"
+          >
+            ${statusConfig[status].label}
+            <span class="filter-count">${count}</span>
+          </button>
+        `;
+      }).join("");
+
+      statusFilters.querySelectorAll("button").forEach((button) => {
+        button.addEventListener("click", () => {
+          activeFilter = button.dataset.filter;
+          renderFilters();
+          renderQueue();
+        });
+      });
+    }
+
+    function renderQueue() {
+      const query = queueSearchInput.value.trim().toLowerCase();
+      const sort = queueSortSelect.value;
+      const rows = scannedTubes
+        .filter((item) => activeFilter === "all" || item.status === activeFilter)
+        .filter((item) => {
+          const searchString = [item.barcode, item.patientName, item.materialType, item.analysisType, statusConfig[item.status].label]
+            .join(" ")
+            .toLowerCase();
+          return searchString.includes(query);
+        })
+        .sort((a, b) => sortRows(a, b, sort));
+
+      queueTableBody.innerHTML = rows.map((item) => `
+        <tr class="table-row" tabindex="0" data-id="${item.id}">
+          <td>${formatTime(item.scannedAt)}</td>
+          <td><span class="barcode">${escapeHtml(item.barcode)}</span></td>
+          <td>
+            <span class="patient">
+              <span class="patient-name">${escapeHtml(item.patientName)}</span>
+              <span class="patient-meta">${escapeHtml(item.comment || "Без комментария")}</span>
+            </span>
+          </td>
+          <td>${escapeHtml(item.materialType)}</td>
+          <td>${escapeHtml(item.analysisType)}</td>
+          <td><span class="status-badge ${statusConfig[item.status].className}">${statusConfig[item.status].label}</span></td>
+          <td><button class="ghost-btn" type="button" data-open-row="${item.id}">Открыть</button></td>
+        </tr>
+      `).join("");
+
+      queueTableWrap.style.display = rows.length ? "block" : "none";
+      emptyState.classList.toggle("visible", rows.length === 0);
+
+      queueTableBody.querySelectorAll("[data-open-row]").forEach((button) => {
+        button.addEventListener("click", () => openExistingRow(button.dataset.openRow));
+      });
+
+      queueTableBody.querySelectorAll(".table-row").forEach((row) => {
+        row.addEventListener("keydown", (event) => {
+          if (event.key === "Enter") openExistingRow(row.dataset.id);
+        });
+      });
+    }
+
+    function openExistingRow(id) {
+      const row = scannedTubes.find((item) => item.id === id);
+      if (!row) return;
+
+      const order = mockOrders.find((item) => item.barcode === row.barcode);
+      if (!order) {
+        showToast("Для этой записи нет найденного заказа в ЛИС. Статус: ошибка идентификации.");
+        return;
+      }
+
+      openTubeCheck(order);
+      const decisionInput = document.querySelector(`input[name='decision'][value='${row.status}']`);
+      if (decisionInput) decisionInput.checked = true;
+      decisionComment.value = row.comment || "";
+      currentTubeStatus.textContent = statusConfig[row.status].label;
+      currentTubeStatus.className = `status-badge ${statusConfig[row.status].className}`;
+    }
+
+    function sortRows(a, b, sort) {
+      if (sort === "timeAsc") return new Date(a.scannedAt) - new Date(b.scannedAt);
+      if (sort === "barcodeAsc") return a.barcode.localeCompare(b.barcode, "ru");
+      if (sort === "statusAsc") return statusConfig[a.status].label.localeCompare(statusConfig[b.status].label, "ru");
+      return new Date(b.scannedAt) - new Date(a.scannedAt);
+    }
+
+    function getCounts() {
+      return scannedTubes.reduce((acc, item) => {
+        acc[item.status] = (acc[item.status] || 0) + 1;
+        return acc;
+      }, {});
+    }
+
+    /* =========================================================
+       MODAL HELPERS / ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ МОДАЛЬНЫХ ОКОН
+       ========================================================= */
+    function openModal(modal, focusTarget) {
+      lastFocusedElement = document.activeElement;
+      modal.classList.add("open");
+      document.body.style.overflow = "hidden";
+      window.setTimeout(() => focusTarget?.focus(), 40);
+    }
+
+    function closeModal(modal, shouldRestoreFocus = true) {
+      modal.classList.remove("open");
+      if (!scanModal.classList.contains("open") && !tubeModal.classList.contains("open")) {
+        document.body.style.overflow = "";
+      }
+      if (modal === scanModal) resetScanModal();
+      if (shouldRestoreFocus && lastFocusedElement && typeof lastFocusedElement.focus === "function") {
+        lastFocusedElement.focus();
+      }
+    }
+
+    /* =========================================================
+       FORMATTERS / ФОРМАТИРОВАНИЕ ДАТ, ВРЕМЕНИ И ТЕКСТОВ
+       ========================================================= */
+    function updateDateTime() {
+      currentDateTime.textContent = new Intl.DateTimeFormat("ru-RU", {
+        day: "2-digit",
+        month: "short",
+        hour: "2-digit",
+        minute: "2-digit"
+      }).format(new Date());
+    }
+
+    function formatDate(value) {
+      return new Intl.DateTimeFormat("ru-RU", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric"
+      }).format(new Date(value));
+    }
+
+    function formatDateTime(value) {
+      return new Intl.DateTimeFormat("ru-RU", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit"
+      }).format(new Date(value));
+    }
+
+    function formatTime(value) {
+      return new Intl.DateTimeFormat("ru-RU", {
+        hour: "2-digit",
+        minute: "2-digit"
+      }).format(new Date(value));
+    }
+
+    function formatDurationHours(hours) {
+      if (hours < 24) return `${hours} ч.`;
+      const days = Math.floor(hours / 24);
+      const rest = hours % 24;
+      return rest ? `${days} д. ${rest} ч.` : `${days} д.`;
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add("visible");
+      window.clearTimeout(showToast.timeoutId);
+      showToast.timeoutId = window.setTimeout(() => toast.classList.remove("visible"), 3200);
+    }
+  </script>
+</body>
+</html>
